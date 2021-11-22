@@ -1,5 +1,7 @@
 import RPi.GPIO as GPIO
 import time
+from datetime import datetime
+import sys
 
 sensor = 12
 
@@ -17,9 +19,22 @@ def count_rev(pin):
 
 GPIO.add_event_detect(sensor, GPIO.RISING, callback=count_rev)
 
+now = datetime.now()
+
+file = open("data.txt",'w')
+
+file.write("NewData "+str(now)+"\n")
+
 while True:
     time.sleep(sample_time)
 
     rpm = ((count / sample_time) * 60) / slots
     print(rpm)
     count = 0
+
+
+    now = datetime.now()
+
+    file.write(str(rpm)+",")
+    file.write(str(now)+"\n")
+    
