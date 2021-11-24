@@ -8,9 +8,21 @@ now = datetime.now()
 
 #file = open("data.txt",'a')
 
-#file.write("NewData "+str(now)+"\n")
-
 mpu9250 = FaBo9Axis_MPU9250.MPU9250()
+
+calibrationfile = open("mpuOffsets.txt")
+ax_offs = calibrationfile.readline()
+ay_offs = calibrationfile.readline()
+az_offs = calibrationfile.readline()
+gx_offs = calibrationfile.readline()
+gy_offs = calibrationfile.readline()
+gz_offs = calibrationfile.readline()
+mx_offs = calibrationfile.readline()
+my_offs = calibrationfile.readline()
+mz_offs = calibrationfile.readline()
+calibrationfile.close()
+
+#file.write("NewData "+str(now)+"\n")
 
 while 1:
     now = datetime.now()
@@ -19,20 +31,18 @@ while 1:
     mag = mpu9250.readMagnet()
     temp = mpu9250.readTemperature()
 
-
     #Apply calibration values
+    ax_cal = accel['x'] - ax_offs
+    ay_cal = accel['y'] - ay_offs
+    az_cal = accel['z'] - az_offs
 
-    ax_cal = accel['x'] - 0.008179822369812628
-    ay_cal = accel['y'] - -0.0037405177991776117 
-    az_cal = accel['z'] - 0.011897173006833461
+    gx_cal = gyro['x'] - gx_offs
+    gy_cal = gyro['y'] - gy_offs
+    gz_cal = gyro['z'] - gz_offs
 
-    gx_cal = gyro['x'] - 1.5598297119140625
-    gy_cal = gyro['y'] - 0.8936691284179688
-    gz_cal = gyro['z'] - -0.0997161865234375
-
-    mx_cal = mag['x'] - -6.73828125
-    my_cal = mag['y'] - -45.99609375
-    mz_cal = mag['z'] - -19.4091796875
+    mx_cal = mag['x'] - mx_offs
+    my_cal = mag['y'] - my_offs
+    mz_cal = mag['z'] - mz_offs
 
     angx = math.atan2(mz_cal,my_cal)*180/math.pi
     if angx < 0:
