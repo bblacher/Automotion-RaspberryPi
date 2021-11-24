@@ -32,17 +32,17 @@ while 1:
     temp = mpu9250.readTemperature()
 
     #Apply calibration values
-    ax_cal = accel['x'] - ax_offs
-    ay_cal = accel['y'] - ay_offs
-    az_cal = accel['z'] - az_offs
+    ax_cal = accel['x'] - float(ax_offs)
+    ay_cal = accel['y'] - float(ay_offs)
+    az_cal = accel['z'] - float(az_offs)
 
-    gx_cal = gyro['x'] - gx_offs
-    gy_cal = gyro['y'] - gy_offs
-    gz_cal = gyro['z'] - gz_offs
+    gx_cal = gyro['x'] - float(gx_offs)
+    gy_cal = gyro['y'] - float(gy_offs)
+    gz_cal = gyro['z'] - float(gz_offs)
 
-    mx_cal = mag['x'] - mx_offs
-    my_cal = mag['y'] - my_offs
-    mz_cal = mag['z'] - mz_offs
+    mx_cal = mag['x'] - float(mx_offs)
+    my_cal = mag['y'] - float(my_offs)
+    mz_cal = mag['z'] - float(mz_offs)
 
     angx = math.atan2(mz_cal,my_cal)*180/math.pi
     if angx < 0:
