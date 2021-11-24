@@ -6,11 +6,11 @@ from datetime import datetime
 
 now = datetime.now()
 
-#file = open("data.txt",'a')
+file = open("./data/data.txt",'w') #change mode to 'a' whan merging, has to be 'a' when shipping
 
 mpu9250 = FaBo9Axis_MPU9250.MPU9250()
 
-calibrationfile = open("mpuOffsets.txt")
+calibrationfile = open("./config/mpuOffsets.txt")
 ax_offs = calibrationfile.readline()
 ay_offs = calibrationfile.readline()
 az_offs = calibrationfile.readline()
@@ -22,7 +22,7 @@ my_offs = calibrationfile.readline()
 mz_offs = calibrationfile.readline()
 calibrationfile.close()
 
-#file.write("NewData "+str(now)+"\n")
+file.write("NewData "+str(now)+"\n")
 
 while 1:
     now = datetime.now()
@@ -74,6 +74,5 @@ while 1:
     print("angy = " + str(angy))
     print("angz = " + str(angz))
 
-
-    #file.write(str(now)+"\n")
+    file.write(str(now)+"\n")
     time.sleep(0.2)
