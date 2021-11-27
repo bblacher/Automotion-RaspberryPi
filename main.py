@@ -21,7 +21,7 @@ count_front_L = 0
 count_front_R = 0
 
 slots_rear = 20 
-slots_front = 20
+slots_front = 2
 d_wheel = 0.14
 sample_time = 1
 
