@@ -5,7 +5,7 @@ import pynmea2
 
 while True:
 	port="/dev/ttyAMA0"
-	ser=serial.Serial(port, baudrate=9600, timeout=0.5)
+	ser=serial.Serial(port, baudrate=9600, timeout=1)
 	dataout = pynmea2.NMEAStreamReader()
 	newdata=ser.readline()
 
@@ -13,5 +13,5 @@ while True:
 		newmsg=pynmea2.parse(newdata)
 		lat=newmsg.latitude
 		lng=newmsg.longitude
-		gps = "Latitude=" + str(lat) + "and Longitude=" + str(lng)
-		print(gps)
+		gps = str(lat) + ", " + str(lng)
+                print(gps)
