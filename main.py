@@ -1,8 +1,10 @@
-import FaBo9Axis_MPU9250
-import time
-import sys
-import math
 import os
+import sys
+import time
+import smbus
+
+from imusensor.MPU9250 import MPU9250
+from imusensor.filters import madgwick
 from datetime import datetime
 
 if not os.path.exists('data'):
@@ -10,87 +12,62 @@ if not os.path.exists('data'):
 
 now = datetime.now()
 
-file = open("./data/data.txt",'w+') #change mode to 'a+' when merging, has to be 'a+' when shipping
+file = open("/home/pi/Diplomarbeit/RC-Car/data/data.txt",'w+') #change mode to 'a+' when merging, has to be 'a+' when shipping
 
-mpu9250 = FaBo9Axis_MPU9250.MPU9250()
+sensorfusion = madgwick.Madgwick(0.5)
 
-calibrationfile = open("./config/mpuOffsets.txt")
-ax_offs = calibrationfile.readline()
-ay_offs = calibrationfile.readline()
-az_offs = calibrationfile.readline()
-gx_offs = calibrationfile.readline()
-gy_offs = calibrationfile.readline()
-gz_offs = calibrationfile.readline()
-mx_offs = calibrationfile.readline()
-my_offs = calibrationfile.readline()
-mz_offs = calibrationfile.readline()
-calibrationfile.close()
+address = 0x68
+bus = smbus.SMBus(1)
+imu = MPU9250.MPU9250(bus, address)
 
-file.write("NewData "+str(now)+"\n")
+imu.begin()
+
+imu.loadCalibDataFromFile("/home/pi/Diplomarbeit/RC-Car/config/Calib.json")
+
+currTime = time.time()
+
+print_count = 0
 
 while 1:
-    now = datetime.now()
-    accel = mpu9250.readAccel()
-    gyro = mpu9250.readGyro()
-    mag = mpu9250.readMagnet()
-    temp = mpu9250.readTemperature()
+    imu.readSensor()
+    for i in range(10):
+        newTime = time.time()
+        dt = newTime - currTime
+        currTime = newTime
 
-    #Apply calibration values
-    ax_cal = accel['x'] - float(ax_offs)
-    ay_cal = accel['y'] - float(ay_offs)
-    az_cal = accel['z'] - float(az_offs)
+        sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0], \
+									imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1], imu.MagVals[2], dt)
 
-    gx_cal = gyro['x'] - float(gx_offs)
-    gy_cal = gyro['y'] - float(gy_offs)
-    gz_cal = gyro['z'] - float(gz_offs)
+    if print_count == 2:
 
-    mx_cal = mag['x'] - float(mx_offs)
-    my_cal = mag['y'] - float(my_offs)
-    mz_cal = mag['z'] - float(mz_offs)
+        now = datetime.now()
+        roll = sensorfusion.roll
+        pitch = sensorfusion.pitch
+        yaw = sensorfusion.yaw
+        temp = imu.Temp
 
-    angx = math.atan2(mz_cal,my_cal)*180/math.pi
-    if angx < 0:
-        angx = 360 + angx
+        if roll < 0:
+            roll = 360 + roll
 
-    angy = math.atan2(mz_cal,mx_cal)*180/math.pi
-    if angy < 0:
-        angy = 360 + angy
+        if pitch < 0:
+            pitch = 360 + pitch
 
-    angz = math.atan2(my_cal,mx_cal)*180/math.pi
-    if angz < 0:
-        angz = 360 + angz
+        if yaw < 0:
+            yaw = 360 + yaw
 
-    print("ax = " + str(ax_cal))
-    print("ay = " + str(ay_cal))
-    print("az = " + str(az_cal))
+        print("roll: " + str(roll))
+        print("pitch: " + str(pitch))
+        print("yaw: " + str(yaw))
+        print("Temp: " + str(temp))
 
-    print("gx = " + str(gx_cal))
-    print("gy = " + str(gy_cal))
-    print("gz = " + str(gz_cal))
+        file.write(str(now)+",")
+        file.write(str(roll)+",")
+        file.write(str(pitch)+",")
+        file.write(str(yaw)+",")
+        file.write(str(temp)+",")
+        file.write("\n")
 
-    print("mx = " + str(mx_cal))
-    print("my = " + str(my_cal))
-    print("mz = " + str(mz_cal))
+        print_count = 0
 
-    print("Temp = " + str(temp))
-
-    print("angx = " + str(angx))
-    print("angy = " + str(angy))
-    print("angz = " + str(angz))
-
-    file.write(str(now)+",")
-    file.write(str(ax_cal)+",")
-    file.write(str(ay_cal)+",")
-    file.write(str(az_cal)+",")
-    file.write(str(gx_cal)+",")
-    file.write(str(gy_cal)+",")
-    file.write(str(gz_cal)+",")
-    file.write(str(mx_cal)+",")
-    file.write(str(my_cal)+",")
-    file.write(str(mz_cal)+",")
-    file.write(str(temp)+",")
-    file.write(str(angx)+",")
-    file.write(str(angy)+",")
-    file.write(str(angz)+",")
-    file.write("\n")
-    time.sleep(0.2)
+    print_count = print_count + 1
+    time.sleep(0.01)
