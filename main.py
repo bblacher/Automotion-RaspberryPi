@@ -39,8 +39,7 @@ while 1:
         dt = newTime - currTime
         currTime = newTime
 
-        sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0], \
-									imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1], imu.MagVals[2], dt)
+        sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1], imu.MagVals[2], dt)
 
     if print_count == 10:
 
@@ -60,10 +59,12 @@ while 1:
         file.write(str(yaw)+",")
         a = math.radians(roll - 90)
         b = math.radians(pitch + 90)
-        c = math.radians(yaw+ 90)
+        c = math.radians(yaw)
+        testa = math.radians(roll - 180)
+        testb = math.radians(pitch)
+        testc = 1
        
         #delete
-
         ax = imu.AccelVals[0]
         ay = imu.AccelVals[1]
         az = imu.AccelVals[2]
@@ -71,7 +72,6 @@ while 1:
         print("Ax " + str(ax))
         print("Ay " + str(ay))
         print("Az " + str(az))
-
         #delete
 
         if a < math.pi * -1:
@@ -81,23 +81,33 @@ while 1:
         if c > math.pi:
             c = c - 2 * math.pi
 
+        if testa < math.pi * -1:
+            testa = testa + 2 * math.pi
+        #if b > math.pi:
+        #    b = b - 2 * math.pi
+        if testc > math.pi:
+            testc = testc - 2 * math.pi
+
         print("Grada: " + str(math.degrees(a)))
         print("Gradb: " + str(math.degrees(b)))
         print("Gradc: " + str(math.degrees(c)))
+        print("Grada: " + str(math.degrees(testa)))
+        print("Gradb: " + str(math.degrees(testb)))
+        print("Gradc: " + str(math.degrees(testc)))
 
-        if yaw*pitch < 0:
-            ax = imu.AccelVals[0] - math.sqrt((g*math.tan(c)/math.sqrt((math.tan(c)** 2)/(math.cos(b) ** 2) +1)) ** 2)
-        elif yaw*pitch > 0:
-            ax = imu.AccelVals[0] + math.sqrt((g*math.tan(c)/math.sqrt((math.tan(c)** 2)/(math.cos(b) ** 2) +1)) ** 2)
+        if testb < 0:
+            ax = imu.AccelVals[0] - math.sqrt(((g*math.tan(c))/math.sqrt(((math.tan(c) ** 2)/(math.cos(b) ** 2)) + 1)) ** 2)
+        elif testb > 0:
+            ax = imu.AccelVals[0] + math.sqrt(((g*math.tan(c))/math.sqrt(((math.tan(c) ** 2)/(math.cos(b) ** 2)) + 1)) ** 2)
 
-        if yaw*roll < 0:
+        if testa < 0:
             ay = imu.AccelVals[1] - g/math.sqrt(math.tan(c) ** 2 + math.tan(a) ** 2 + 1 )
-        elif yaw*roll > 0:
+        elif testa > 0:
             ay = imu.AccelVals[1] + g/math.sqrt(math.tan(c) ** 2 + math.tan(a) ** 2 + 1 )
         
-        if roll*pitch < 0:
+        if a*b < 0:
             az = imu.AccelVals[2] - g/math.sqrt((1 / math.tan(a)) ** 2 + (1 / math.tan(b)) ** 2 + 1 )
-        elif roll*pitch > 0:
+        elif a*b > 0:
             az = imu.AccelVals[2] + g/math.sqrt((1 / math.tan(a)) ** 2 + (1 / math.tan(b)) ** 2 + 1 )
 
         print("Ax " + str(ax))
