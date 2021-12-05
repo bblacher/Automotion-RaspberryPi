@@ -59,30 +59,46 @@ while 1:
         file.write(str(pitch)+",")
         file.write(str(yaw)+",")
         a = math.radians(roll - 90)
-        b = math.radians(pitch - 90)
-        c = math.radians(yaw - 90)
+        b = math.radians(pitch + 90)
+        c = math.radians(yaw+ 90)
        
+        #delete
+
+        ax = imu.AccelVals[0]
+        ay = imu.AccelVals[1]
+        az = imu.AccelVals[2]
+
+        print("Ax " + str(ax))
+        print("Ay " + str(ay))
+        print("Az " + str(az))
+
+        #delete
+
         if a < math.pi * -1:
             a = a + 2 * math.pi
-        if b < math.pi * -1:
-            b = b + 2 * math.pi
-        if c < math.pi * -1:
-            c = c + 2 * math.pi
+        if b > math.pi:
+            b = b - 2 * math.pi
+        if c > math.pi:
+            c = c - 2 * math.pi
 
-        if math.atan(c/b) < 0:
-            ax = imu.AccelVals[0] + g*math.tan(c)/math.sqrt((math.tan(c)** 2)/(math.cos(b) ** 2) +1)
-        elif math.atan(c/b) > 0:
-            ax = imu.AccelVals[0] - g*math.tan(c)/math.sqrt((math.tan(c)** 2)/(math.cos(b) ** 2) +1)
+        print("Grada: " + str(math.degrees(a)))
+        print("Gradb: " + str(math.degrees(b)))
+        print("Gradc: " + str(math.degrees(c)))
 
-        if math.atan(c/a) < 0:
-            ay = imu.AccelVals[1] + g/math.sqrt(math.tan(c) ** 2 + math.tan(a) ** 2 + 1 )
-        elif math.atan(c/a) > 0:
+        if yaw*pitch < 0:
+            ax = imu.AccelVals[0] - math.sqrt((g*math.tan(c)/math.sqrt((math.tan(c)** 2)/(math.cos(b) ** 2) +1)) ** 2)
+        elif yaw*pitch > 0:
+            ax = imu.AccelVals[0] + math.sqrt((g*math.tan(c)/math.sqrt((math.tan(c)** 2)/(math.cos(b) ** 2) +1)) ** 2)
+
+        if yaw*roll < 0:
             ay = imu.AccelVals[1] - g/math.sqrt(math.tan(c) ** 2 + math.tan(a) ** 2 + 1 )
+        elif yaw*roll > 0:
+            ay = imu.AccelVals[1] + g/math.sqrt(math.tan(c) ** 2 + math.tan(a) ** 2 + 1 )
         
-        if math.atan(a/b) < 0:
-            az = imu.AccelVals[2] + g/math.sqrt((1 / math.tan(a)) ** 2 + (1 / math.tan(b)) ** 2 + 1 )
-        elif math.atan(a/b) > 0:
+        if roll*pitch < 0:
             az = imu.AccelVals[2] - g/math.sqrt((1 / math.tan(a)) ** 2 + (1 / math.tan(b)) ** 2 + 1 )
+        elif roll*pitch > 0:
+            az = imu.AccelVals[2] + g/math.sqrt((1 / math.tan(a)) ** 2 + (1 / math.tan(b)) ** 2 + 1 )
 
         print("Ax " + str(ax))
         print("Ay " + str(ay))
