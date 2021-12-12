@@ -114,5 +114,5 @@ while 1:
 
         print_count = 0
 
-    print_count = print_count + 1
+    print_count += 1
     time.sleep(0.01)
