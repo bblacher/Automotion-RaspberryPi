@@ -28,9 +28,20 @@ imu.loadCalibDataFromFile("/home/pi/Diplomarbeit/RC-Car/config/Calib.json")
 currTime = time.time()
 
 print_count = 0
+init_count = 0
 g = 10
 
-file.write("NewData "+str(now)+"\n")
+file.write("datetime,roll,pitch,yaw,ax,ay,az\n")
+
+while init_count <= 150:
+    imu.readSensor()
+    for i in range(10):
+        newTime = time.time()
+        dt = newTime - currTime
+        currTime = newTime
+        sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1], imu.MagVals[2], dt)
+    init_count += 1
+    time.sleep(0.01)
 
 while 1:
     imu.readSensor()
@@ -38,7 +49,6 @@ while 1:
         newTime = time.time()
         dt = newTime - currTime
         currTime = newTime
-
         sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1], imu.MagVals[2], dt)
 
     if print_count == 10:
@@ -49,71 +59,34 @@ while 1:
         yaw = sensorfusion.yaw
         temp = imu.Temp
 
-        file.write(str(now)+",")
-        print("roll: " + str(roll))
-        print("pitch: " + str(pitch))
-        print("yaw: " + str(yaw))
-
-        file.write(str(roll)+",")
-        file.write(str(pitch)+",")
-        file.write(str(yaw)+",")
         a = math.radians(roll - 90)
         b = math.radians(pitch + 90)
         c = math.radians(yaw)
-        testa = math.radians(roll - 180)
-        testb = math.radians(pitch)
-        testc = math.radians(yaw)
+
+        flipa = math.radians(roll - 180)
+        flipb = math.radians(pitch)
        
-        #delete
-        ax = imu.AccelVals[0]
-        ay = imu.AccelVals[1]
-        az = imu.AccelVals[2]
-
-        print("Ax " + str(ax))
-        print("Ay " + str(ay))
-        print("Az " + str(az))
-        #delete
-
         if a < math.pi * -1:
             a = a + 2 * math.pi
+
         if b > math.pi:
             b = b - 2 * math.pi
-        if c > math.pi:
-            c = c - 2 * math.pi
 
-        if testa < math.pi * -1:
-            testa = testa + 2 * math.pi
-        #if b > math.pi:
-        #    b = b - 2 * math.pi
-        if testc > math.pi:
-            testc = testc - 2 * math.pi
+        if flipa < math.pi * -1:
+            flipa = flipa + 2 * math.pi
 
-        print("Grada: " + str(math.degrees(a)))
-        print("Gradb: " + str(math.degrees(b)))
-        print("Gradc: " + str(math.degrees(c)))
-        print("CalcGrada: " + str(math.degrees(testa)))
-        print("CalcGradb: " + str(math.degrees(testb)))
-        print("CalcGradc: " + str(math.degrees(testc)))
+        xoffs = math.sqrt(((g*math.tan(math.radians(90)))/math.sqrt((math.tan(math.radians(90))**2)/(math.cos(b)**2)+1))**2) 
+        yoffs = g/math.sqrt((math.tan(0)**2)+(math.tan(a)**2)+1)
+        zoffs = g/math.sqrt(((1/math.tan(a))**2)+((1/math.tan(b))**2)+1)
 
-        xoffs =math.sqrt(((g*math.tan(math.radians(90)))/math.sqrt((math.tan(math.radians(90))**2)/(math.cos(b)**2)+1)) **2) 
-        yoffs =g/math.sqrt((math.tan(0)**2)+(math.tan(a)**2)+1)
-        zoffs =g/math.sqrt(((1/math.tan(a))**2)+((1/math.tan(b))**2)+1)
-
-        offsum = math.sqrt(xoffs ** 2 + yoffs ** 2 + zoffs ** 2)
-
-        print("Xoffs: " + str(xoffs))
-        print("Yoffs: " + str(yoffs))
-        print("Zoffs: " + str(zoffs))
-        print("Offsum: " + str(offsum))
-
-        if testb < 0:
+        if flipb < 0:
             ax = imu.AccelVals[0] - xoffs 
-        elif testb > 0:
+        elif flipb > 0:
             ax = imu.AccelVals[0] + xoffs
 
-        if testa < 0:
+        if flipa < 0:
             ay = imu.AccelVals[1] - yoffs 
-        elif testa > 0:
+        elif flipa > 0:
             ay = imu.AccelVals[1] + yoffs
         
         if a*b < 0:
@@ -121,11 +94,21 @@ while 1:
         elif a*b > 0:
             az = imu.AccelVals[2] + zoffs
 
+        print("roll: " + str(roll))
+        print("pitch: " + str(pitch))
+        print("yaw: " + str(yaw))
         print("Ax " + str(ax))
         print("Ay " + str(ay))
         print("Az " + str(az))
         print("Temp: " + str(temp))
 
+        file.write(str(now) + ",")
+        file.write(str(roll)+ ",")
+        file.write(str(pitch)+ ",")
+        file.write(str(yaw)+ ",")
+        file.write(str(ax)+ ",")
+        file.write(str(ay)+ ",")
+        file.write(str(az)+ ",")
         file.write(str(temp))
         file.write("\n")
 
