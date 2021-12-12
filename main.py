@@ -62,7 +62,7 @@ while 1:
         c = math.radians(yaw)
         testa = math.radians(roll - 180)
         testb = math.radians(pitch)
-        testc = 1
+        testc = math.radians(yaw)
        
         #delete
         ax = imu.AccelVals[0]
@@ -91,24 +91,35 @@ while 1:
         print("Grada: " + str(math.degrees(a)))
         print("Gradb: " + str(math.degrees(b)))
         print("Gradc: " + str(math.degrees(c)))
-        print("Grada: " + str(math.degrees(testa)))
-        print("Gradb: " + str(math.degrees(testb)))
-        print("Gradc: " + str(math.degrees(testc)))
+        print("CalcGrada: " + str(math.degrees(testa)))
+        print("CalcGradb: " + str(math.degrees(testb)))
+        print("CalcGradc: " + str(math.degrees(testc)))
+
+        xoffs =math.sqrt(((g*math.tan(math.radians(90)))/math.sqrt((math.tan(math.radians(90))**2)/(math.cos(b)**2)+1)) **2) 
+        yoffs =g/math.sqrt((math.tan(0)**2)+(math.tan(a)**2)+1)
+        zoffs =g/math.sqrt(((1/math.tan(a))**2)+((1/math.tan(b))**2)+1)
+
+        offsum = math.sqrt(xoffs ** 2 + yoffs ** 2 + zoffs ** 2)
+
+        print("Xoffs: " + str(xoffs))
+        print("Yoffs: " + str(yoffs))
+        print("Zoffs: " + str(zoffs))
+        print("Offsum: " + str(offsum))
 
         if testb < 0:
-            ax = imu.AccelVals[0] - math.sqrt(((g*math.tan(c))/math.sqrt(((math.tan(c) ** 2)/(math.cos(b) ** 2)) + 1)) ** 2)
+            ax = imu.AccelVals[0] - xoffs 
         elif testb > 0:
-            ax = imu.AccelVals[0] + math.sqrt(((g*math.tan(c))/math.sqrt(((math.tan(c) ** 2)/(math.cos(b) ** 2)) + 1)) ** 2)
+            ax = imu.AccelVals[0] + xoffs
 
         if testa < 0:
-            ay = imu.AccelVals[1] - g/math.sqrt(math.tan(c) ** 2 + math.tan(a) ** 2 + 1 )
+            ay = imu.AccelVals[1] - yoffs 
         elif testa > 0:
-            ay = imu.AccelVals[1] + g/math.sqrt(math.tan(c) ** 2 + math.tan(a) ** 2 + 1 )
+            ay = imu.AccelVals[1] + yoffs
         
         if a*b < 0:
-            az = imu.AccelVals[2] - g/math.sqrt((1 / math.tan(a)) ** 2 + (1 / math.tan(b)) ** 2 + 1 )
+            az = imu.AccelVals[2] - zoffs
         elif a*b > 0:
-            az = imu.AccelVals[2] + g/math.sqrt((1 / math.tan(a)) ** 2 + (1 / math.tan(b)) ** 2 + 1 )
+            az = imu.AccelVals[2] + zoffs
 
         print("Ax " + str(ax))
         print("Ay " + str(ay))
