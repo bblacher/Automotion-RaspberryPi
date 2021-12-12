@@ -4,7 +4,7 @@ DA Modellauto mit Sensorik
 ## Raspberry Pi Setup:
 ### Installing Raspberry Pi OS:
 1. Download Raspberry Pi OS Lite from https://www.raspberrypi.com/software/operating-systems/
-2. Use some imaging software to get the OS image onto the Raspberry Pi:
+2. Use some imaging software to get the OS image onto the SD-Card:
 ```sh
 sudo fdisk -l
 sudo cp ./image.img /dev/mmcblkX
@@ -30,8 +30,7 @@ sudo apt install usbmount
 2. Change `PrivateMounts` to `no`:
 ```sh
 sudo vim /lib/systemd/system/systemd-udevd.service
-```
-```sh
+--------------------------------------------------
 PrivateMounts=no
 ```
 3. Edit `/etc/usbmount/usbmount.conf` to contain all needed file systems and mount with the right permissions:
