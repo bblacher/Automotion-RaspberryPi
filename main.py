@@ -20,7 +20,7 @@ def usb_automount():
         print("Device mounted: " + str(ismounted))              # output drive mount status
         if ismounted:                                           # if a drive is mounted, copy the datafile to it
             try:                                                # try to copy the file
-                shutil.copy("./data/data.txt", "/media/usb0")   # Copy the file to the drive
+                shutil.copy("./data/*.txt", "/media/usb0")   # Copy the file to the drive
                 print("copied!")                                # Confirmation that the file was copied successfully
             except:                                             # Error-Case: tell the user that the file wasn't copied
                 print("copy error! (is there a datafile?)")     # Write the error
@@ -36,7 +36,12 @@ def usb_automount():
 if not os.path.exists('data'):  # If the data path doesn't exit, create it
     os.makedirs('data')
 
-file = open("./data/data.txt", 'a+')  # Open the datafile in append-mode if it exists, create it if it doesn't exist
+now = str(datetime.now())                           # get datetime for the file name
+now = now.replace(' ', '_')                         # replace blank space with underline for the file name
+now = now.replace(':', '_')                         # replace colon with underline for the file name
+now = now.replace('.', '_')                         # replace dot with underline for the file name
+print(now)
+file = open("./data/" + now + ".txt", 'w+')         # create and open a new datafile
 
 sensorfusion = madgwick.Madgwick(0.5)               # set Madgwick as the sensorfusion-algorythm
 address = 0x68                                      # MPU9250 I2C-Address
@@ -53,7 +58,7 @@ currTime = time.time()                              # save the current time for 
 print_count = 0                                     # init print_count
 g = 10                                              # set g as 10
 
-file.write("datetime,roll,pitch,yaw,ax,ay,az\n")    # write the data legend into a new line
+file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp\n")    # write the data legend into a new line
 if not imuerror:
     for i in range(150):                            # do the sensorfusion 150 times to get the initial wrong data out of the way
         imu.readSensor()                            # main loop if the imu has no error
@@ -78,7 +83,7 @@ if not imuerror:
 
         if print_count == 10:                   # every 10 cycles write the data to the SD Card
 
-            now = datetime.now()                # get datetime
+            now = str(datetime.now())                # get datetime
             roll = sensorfusion.roll            # get roll
             pitch = sensorfusion.pitch          # get pitch
             yaw = sensorfusion.yaw              # get yaw
@@ -125,7 +130,7 @@ if not imuerror:
             print("Az " + str(az))              # print az
             print("Temp: " + str(temp))         # print temp
 
-            file.write(str(now) + ",")          # write Time
+            file.write(now + ",")               # write Time
             file.write(str(roll) + ",")         # write roll
             file.write(str(pitch) + ",")        # write pitch
             file.write(str(yaw) + ",")          # write yaw
@@ -141,5 +146,32 @@ if not imuerror:
         time.sleep(0.01)                        # wait for 10 milliseconds
 
 elif imuerror:
+    roll = "error"
+    pitch = "error"
+    yaw = "error"
+    ax = "error"
+    ay = "error"
+    az = "error"
+    temp = "error"
     while 1:
         print("imuerror")
+        now = str(datetime.now())                # get datetime
+
+        print("roll: " + roll)         # print roll
+        print("pitch: " + pitch)       # print pitch
+        print("yaw: " + yaw)           # print yaw
+        print("Ax " + ax)              # print ax
+        print("Ay " + ay)              # print ay
+        print("Az " + az)              # print az
+        print("Temp: " + temp)         # print temp
+
+        file.write(now + ",")          # write Time
+        file.write(roll + ",")         # write roll
+        file.write(pitch + ",")        # write pitch
+        file.write(yaw + ",")          # write yaw
+        file.write(ax + ",")           # write ax
+        file.write(ay + ",")           # write ay
+        file.write(az + ",")           # write az
+        file.write(temp)               # write temp
+        file.write("\n")                    # write newline
+        time.sleep(5)
