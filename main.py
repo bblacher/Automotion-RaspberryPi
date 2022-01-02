@@ -173,5 +173,5 @@ elif imuerror:
         file.write(ay + ",")           # write ay
         file.write(az + ",")           # write az
         file.write(temp)               # write temp
-        file.write("\n")                    # write newline
+        file.write("\n")               # write newline
         time.sleep(5)
