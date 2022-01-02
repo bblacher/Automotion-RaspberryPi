@@ -1,5 +1,5 @@
-# Run this script as root to get it working
-
+import serial       # Used for UART communication
+import pynmea2      # Used for GPS Library
 import os           # Used to check if a drive is mounted
 import time         # Used for delays
 import smbus        # Used for sensor access
@@ -10,7 +10,6 @@ from imusensor.MPU9250 import MPU9250   # Used for getting MPU9250 readings
 from imusensor.filters import madgwick  # Used for the madgwick filter
 from datetime import datetime           # Used for the madgwick filter timing
 
-
 # Function definitions:
 def usb_automount():
     done = False
@@ -20,7 +19,7 @@ def usb_automount():
         print("Device mounted: " + str(ismounted))              # output drive mount status
         if ismounted:                                           # if a drive is mounted, copy the datafile to it
             try:                                                # try to copy the file
-                shutil.copy("./data/*.txt", "/media/usb0")   # Copy the file to the drive
+                shutil.copy("./data/*.txt", "/media/usb0")      # Copy the file to the drive
                 print("copied!")                                # Confirmation that the file was copied successfully
             except:                                             # Error-Case: tell the user that the file wasn't copied
                 print("copy error! (is there a datafile?)")     # Write the error
@@ -32,6 +31,13 @@ def usb_automount():
         timeout -= 1                                            # Decrease the timeout timer
         time.sleep(1)                                           # 1-Second delay
 
+def getGPS():
+    newdata = ser.readline()                                    # get new data
+    newmsg = pynmea2.parse(newdata)                             # parse new data
+    lat = newmsg.latitude                                       # save latitude
+    lng = newmsg.longitude                                      # save longitude
+    gps = str(lat) + "," + str(lng)                             # save gps data as string
+    return gps                                                  # return gps data
 
 if not os.path.exists('data'):  # If the data path doesn't exit, create it
     os.makedirs('data')
@@ -53,10 +59,12 @@ try:                                                # Error handling for the IMU
 except:                                             # Except-Statement for imuerror
     print("MPU 9250: Error! (Not connected?)")      # Write error message
     imuerror = True                                 # Set imuerror true for later use
-imu.loadCalibDataFromFile("./config/Calib.json")  # load calibration data
+imu.loadCalibDataFromFile("./config/Calib.json")    # load calibration data
 currTime = time.time()                              # save the current time for the sensorfusion
 print_count = 0                                     # init print_count
 g = 10                                              # set g as 10
+port = "/dev/ttyAMA0"                               # define UART device
+ser = serial.Serial(port, baudrate=9600)            # set serial communication options
 
 file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp\n")    # write the data legend into a new line
 if not imuerror:
@@ -83,11 +91,12 @@ if not imuerror:
 
         if print_count == 10:                   # every 10 cycles write the data to the SD Card
 
-            now = str(datetime.now())                # get datetime
+            now = str(datetime.now())           # get datetime
             roll = sensorfusion.roll            # get roll
             pitch = sensorfusion.pitch          # get pitch
             yaw = sensorfusion.yaw              # get yaw
             temp = imu.Temp                     # get temp
+            gps = getGPS()                      # get GPS data
 
             a = math.radians(roll - 90)         # flip the roll data by -90 degrees and save it into a
             b = math.radians(pitch + 90)        # flip the pitch data by 90 degrees and save it into a
@@ -129,6 +138,7 @@ if not imuerror:
             print("Ay " + str(ay))              # print ay
             print("Az " + str(az))              # print az
             print("Temp: " + str(temp))         # print temp
+            print("GPS: " + gps)                # print gps
 
             file.write(now + ",")               # write Time
             file.write(str(roll) + ",")         # write roll
@@ -137,7 +147,8 @@ if not imuerror:
             file.write(str(ax) + ",")           # write ax
             file.write(str(ay) + ",")           # write ay
             file.write(str(az) + ",")           # write az
-            file.write(str(temp))               # write temp
+            file.write(str(temp) + ",")         # write temp
+            file.write(gps)                     # write gps
             file.write("\n")                    # write newline
 
             print_count = 0                     # reset print count
@@ -146,32 +157,35 @@ if not imuerror:
         time.sleep(0.01)                        # wait for 10 milliseconds
 
 elif imuerror:
-    roll = "error"
-    pitch = "error"
-    yaw = "error"
-    ax = "error"
-    ay = "error"
-    az = "error"
-    temp = "error"
+    roll = "error"                      # write error into imusensor values
+    pitch = "error"                     # write error into imusensor values
+    yaw = "error"                       # write error into imusensor values
+    ax = "error"                        # write error into imusensor values
+    ay = "error"                        # write error into imusensor values
+    az = "error"                        # write error into imusensor values
+    temp = "error"                      # write error into imusensor values
     while 1:
-        print("imuerror")
-        now = str(datetime.now())                # get datetime
+        print("imuerror")               # print error
+        now = str(datetime.now())       # get datetime
+        gps = getGPS()                  # get GPS data
 
-        print("roll: " + roll)         # print roll
-        print("pitch: " + pitch)       # print pitch
-        print("yaw: " + yaw)           # print yaw
-        print("Ax " + ax)              # print ax
-        print("Ay " + ay)              # print ay
-        print("Az " + az)              # print az
-        print("Temp: " + temp)         # print temp
+        print("roll: " + roll)          # print roll
+        print("pitch: " + pitch)        # print pitch
+        print("yaw: " + yaw)            # print yaw
+        print("Ax " + ax)               # print ax
+        print("Ay " + ay)               # print ay
+        print("Az " + az)               # print az
+        print("Temp: " + temp)          # print temp
+        print("GPS: " + gps)            # print gps
 
-        file.write(now + ",")          # write Time
-        file.write(roll + ",")         # write roll
-        file.write(pitch + ",")        # write pitch
-        file.write(yaw + ",")          # write yaw
-        file.write(ax + ",")           # write ax
-        file.write(ay + ",")           # write ay
-        file.write(az + ",")           # write az
-        file.write(temp)               # write temp
-        file.write("\n")               # write newline
-        time.sleep(5)
+        file.write(now + ",")           # write Time
+        file.write(roll + ",")          # write roll
+        file.write(pitch + ",")         # write pitch
+        file.write(yaw + ",")           # write yaw
+        file.write(ax + ",")            # write ax
+        file.write(ay + ",")            # write ay
+        file.write(az + ",")            # write az
+        file.write(temp)                # write temp
+        file.write(gps)                 # write gps
+        file.write("\n")                # write newline
+        time.sleep(5)                   # wait for 5 seconds
