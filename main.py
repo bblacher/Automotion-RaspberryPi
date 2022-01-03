@@ -56,8 +56,8 @@ def get_gps():
     newmsg = pynmea2.parse(newdata)                             # parse new data
     lat = newmsg.latitude                                       # save latitude
     lng = newmsg.longitude                                      # save longitude
-    gps_data = str(lat) + "," + str(lng)                        # save gps data as string
-    return gps_data                                             # return gps data
+    global gps
+    gps = str(lat) + "," + str(lng)                        # save gps data as string
 
 
 def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):        # print the data (meant for debugging purposes)
@@ -110,7 +110,9 @@ except:                                             # Except-Statement for imuer
 g = 10                                              # set g as 10
 
 port = "/dev/ttyAMA0"                               # define UART device
-ser = serial.Serial(port, baudrate=9600)            # set serial communication options
+ser = serial.Serial(port, baudrate=9600, timeout=0.5)            # set serial communication options
+process_gps = Process(target=get_gps)  # create thread for the sensorfusion
+process_gps.start()  # start the thread for the sensorfusion
 
 file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng\n")    # write the data legend into a new line
 
@@ -163,7 +165,6 @@ while 1:
             az = "error"  # write error into imusensor values
             temp = "error"  # write error into imusensor values
 
-        gps = get_gps()                                             # get GPS data
         print_data(roll, pitch, yaw, ax, ay, az, temp, gps)         # print the data (meant for debugging purposes)
         write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps)    # write the data to the internal sd card
         time.sleep(1)
