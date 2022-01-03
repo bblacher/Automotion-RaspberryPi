@@ -13,8 +13,8 @@ from datetime import datetime           # Used for the madgwick filter timing
 
 # Function definitions:
 def usb_automount():
-    done = False
-    timeout = 15
+    done = False    # init done as false
+    timeout = 15    # set timeout to 15 seconds
     while not done and timeout > 1:
         ismounted = os.path.ismount("/media/usb0")              # check if a drive is mounted
         print("Device mounted: " + str(ismounted))              # output drive mount status
@@ -33,13 +33,25 @@ def usb_automount():
         time.sleep(1)                                           # 1-Second delay
 
 
+def sensor_fusion():
+    imu.readSensor()  # main loop if the imu has no error
+    for fusionloop in range(10):  # get new sensor readings
+        newtime = time.time()  # run the sensorfusion algorythm 10x faster than the sensor gets read
+        dt = newtime - currtime  # get the new time
+        currtime = newtime  # calculate the difference between the last and the new time
+        sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
+                                        imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
+                                        imu.MagVals[2], dt)  # call the sensorfusion algorithm
+    time.sleep(0.01)
+
+
 def get_gps():
     newdata = ser.readline()                                    # get new data
     newmsg = pynmea2.parse(newdata)                             # parse new data
     lat = newmsg.latitude                                       # save latitude
     lng = newmsg.longitude                                      # save longitude
-    gps = str(lat) + "," + str(lng)                             # save gps data as string
-    return gps                                                  # return gps data
+    gps_data = str(lat) + "," + str(lng)                             # save gps data as string
+    return gps_data                                                  # return gps data
 
 
 def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):        # print the data (meant for debugging purposes)
@@ -53,7 +65,7 @@ def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):        
     print("GPS: " + str(u_gps))  # print gps
 
 
-def write_data(u_now, u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps): # write the data to the internal sd card
+def write_data(u_now, u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):  # write the data to the internal sd card
     file.write(str(u_now) + ",")  # write Time
     file.write(str(u_roll) + ",")  # write roll
     file.write(str(u_pitch) + ",")  # write pitch
@@ -94,30 +106,15 @@ ser = serial.Serial(port, baudrate=9600)            # set serial communication o
 
 file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp\n")    # write the data legend into a new line
 if not imuerror:
-    for i in range(150):                            # do the sensorfusion 150 times to get the initial wrong data out of the way
+    for initloop in range(150):                            # do the sensorfusion 150 times to get the initial wrong data out of the way
         try:
-            imu.readSensor()                            # main loop if the imu has no error
-            for i in range(10):                         # get new sensor readings
-                newTime = time.time()                   # run the sensorfusion algorythm 10x faster than the sensor gets read
-                dt = newTime - currTime                 # get the new time
-                currTime = newTime                      # calculate the difference between the last and the new time
-                sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
-                                                imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
-                                                imu.MagVals[2], dt)  # call the sensorfusion algorithm
-            time.sleep(0.01)
+            sensor_fusion()
         except:
-            imuerror = True # Set imuerror True if there was an error
+            imuerror = True  # Set imuerror True if there was an error
 
     while not imuerror:                             # main loop if the imu has no error
         try:
-            imu.readSensor()                            # get new sensor readings
-            for i in range(10):                         # run the sensorfusion algorythm 10x faster than the sensor gets read
-                newTime = time.time()                   # get the new time
-                dt = newTime - currTime                 # calculate the difference between the last and the new time
-                currTime = newTime                      # write the new time into currTime for the next cycle
-                sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
-                                                imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
-                                                imu.MagVals[2], dt)  # call the sensorfusion algorithm
+            sensor_fusion()
 
             if print_count == 10:                   # every 10 cycles write the data to the SD Card
 
@@ -162,14 +159,14 @@ if not imuerror:
                     az = imu.AccelVals[2] + zoffs   # add z-Offset
 
                 print_data(roll, pitch, yaw, ax, ay, az, temp, gps)  # print the data (meant for debugging purposes)
-                write_data(roll, pitch, yaw, ax, ay, az, temp, gps)  # write the data to the internal sd card
+                write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps)  # write the data to the internal sd card
 
                 print_count = 0                     # reset print count
 
             print_count += 1                        # up print count by 1
             time.sleep(0.01)                        # wait for 10 milliseconds
         except:
-            imuerror = True # Set imuerror True if there was an error
+            imuerror = True  # Set imuerror True if there was an error
 
 if imuerror:
     roll = "error"                      # write error into imusensor values
@@ -185,4 +182,4 @@ if imuerror:
         gps = get_gps()                 # get GPS data
 
         print_data(roll, pitch, yaw, ax, ay, az, temp, gps)  # print the data (meant for debugging purposes)
-        write_data(roll, pitch, yaw, ax, ay, az, temp, gps)  # write the data to the internal sd card
+        write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps)  # write the data to the internal sd card
