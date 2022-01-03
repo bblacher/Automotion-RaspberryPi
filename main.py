@@ -49,7 +49,6 @@ now = str(datetime.now())                           # get datetime for the file 
 now = now.replace(' ', '_')                         # replace blank space with underline for the file name
 now = now.replace(':', '_')                         # replace colon with underline for the file name
 now = now.replace('.', '_')                         # replace dot with underline for the file name
-print(now)
 file = open("./data/" + now + ".txt", 'w+')         # create and open a new datafile
 
 sensorfusion = madgwick.Madgwick(0.5)               # set Madgwick as the sensorfusion-algorythm
