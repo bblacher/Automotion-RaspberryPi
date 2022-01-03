@@ -33,13 +33,37 @@ def usb_automount():
         time.sleep(1)                                           # 1-Second delay
 
 
-def getGPS():
+def get_gps():
     newdata = ser.readline()                                    # get new data
     newmsg = pynmea2.parse(newdata)                             # parse new data
     lat = newmsg.latitude                                       # save latitude
     lng = newmsg.longitude                                      # save longitude
     gps = str(lat) + "," + str(lng)                             # save gps data as string
     return gps                                                  # return gps data
+
+
+def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):        # print the data (meant for debugging purposes)
+    print("roll: " + str(u_roll))  # print roll
+    print("pitch: " + str(u_pitch))  # print pitch
+    print("yaw: " + str(u_yaw))  # print yaw
+    print("Ax " + str(u_ax))  # print ax
+    print("Ay " + str(u_ay))  # print ay
+    print("Az " + str(u_az))  # print az
+    print("Temp: " + str(u_temp))  # print temp
+    print("GPS: " + str(u_gps))  # print gps
+
+
+def write_data(u_now, u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps): # write the data to the internal sd card
+    file.write(str(u_now) + ",")  # write Time
+    file.write(str(u_roll) + ",")  # write roll
+    file.write(str(u_pitch) + ",")  # write pitch
+    file.write(str(u_yaw) + ",")  # write yaw
+    file.write(str(u_ax) + ",")  # write ax
+    file.write(str(u_ay) + ",")  # write ay
+    file.write(str(u_az) + ",")  # write az
+    file.write(str(u_temp) + ",")  # write temp
+    file.write(str(u_gps))  # write gps
+    file.write("\n")  # write newline
 
 
 if not os.path.exists('data'):  # If the data path doesn't exit, create it
@@ -97,12 +121,12 @@ if not imuerror:
 
             if print_count == 10:                   # every 10 cycles write the data to the SD Card
 
-                now = str(datetime.now())           # get datetime
+                now = datetime.now()                # get datetime
                 roll = sensorfusion.roll            # get roll
                 pitch = sensorfusion.pitch          # get pitch
                 yaw = sensorfusion.yaw              # get yaw
                 temp = imu.Temp                     # get temp
-                gps = getGPS()                      # get GPS data
+                gps = get_gps()                     # get GPS data
 
                 a = math.radians(roll - 90)         # flip the roll data by -90 degrees and save it into a
                 b = math.radians(pitch + 90)        # flip the pitch data by 90 degrees and save it into a
@@ -137,25 +161,8 @@ if not imuerror:
                 elif a * b > 0:                     # check if z-Offset should be added
                     az = imu.AccelVals[2] + zoffs   # add z-Offset
 
-                print("roll: " + str(roll))         # print roll
-                print("pitch: " + str(pitch))       # print pitch
-                print("yaw: " + str(yaw))           # print yaw
-                print("Ax " + str(ax))              # print ax
-                print("Ay " + str(ay))              # print ay
-                print("Az " + str(az))              # print az
-                print("Temp: " + str(temp))         # print temp
-                print("GPS: " + gps)                # print gps
-
-                file.write(now + ",")               # write Time
-                file.write(str(roll) + ",")         # write roll
-                file.write(str(pitch) + ",")        # write pitch
-                file.write(str(yaw) + ",")          # write yaw
-                file.write(str(ax) + ",")           # write ax
-                file.write(str(ay) + ",")           # write ay
-                file.write(str(az) + ",")           # write az
-                file.write(str(temp) + ",")         # write temp
-                file.write(gps)                     # write gps
-                file.write("\n")                    # write newline
+                print_data(roll, pitch, yaw, ax, ay, az, temp, gps)  # print the data (meant for debugging purposes)
+                write_data(roll, pitch, yaw, ax, ay, az, temp, gps)  # write the data to the internal sd card
 
                 print_count = 0                     # reset print count
 
@@ -174,26 +181,8 @@ if imuerror:
     temp = "error"                      # write error into imusensor values
     while 1:
         print("imuerror")               # print error
-        now = str(datetime.now())       # get datetime
-        gps = getGPS()                  # get GPS data
+        now = datetime.now()            # get datetime
+        gps = get_gps()                 # get GPS data
 
-        print("roll: " + roll)          # print roll
-        print("pitch: " + pitch)        # print pitch
-        print("yaw: " + yaw)            # print yaw
-        print("Ax " + ax)               # print ax
-        print("Ay " + ay)               # print ay
-        print("Az " + az)               # print az
-        print("Temp: " + temp)          # print temp
-        print("GPS: " + gps)            # print gps
-
-        file.write(now + ",")           # write Time
-        file.write(roll + ",")          # write roll
-        file.write(pitch + ",")         # write pitch
-        file.write(yaw + ",")           # write yaw
-        file.write(ax + ",")            # write ax
-        file.write(ay + ",")            # write ay
-        file.write(az + ",")            # write az
-        file.write(temp)                # write temp
-        file.write(gps)                 # write gps
-        file.write("\n")                # write newline
-        time.sleep(5)                   # wait for 5 seconds
+        print_data(roll, pitch, yaw, ax, ay, az, temp, gps)  # print the data (meant for debugging purposes)
+        write_data(roll, pitch, yaw, ax, ay, az, temp, gps)  # write the data to the internal sd card
