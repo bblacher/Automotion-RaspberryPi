@@ -53,11 +53,12 @@ def sensor_fusion():
 
 def get_gps():
     newdata = ser.readline()                                    # get new data
-    newmsg = pynmea2.parse(newdata)                             # parse new data
-    lat = newmsg.latitude                                       # save latitude
-    lng = newmsg.longitude                                      # save longitude
-    global gps
-    gps = str(lat) + "," + str(lng)                        # save gps data as string
+    if newdata[0:6] == "$GPRMC":
+        newmsg = pynmea2.parse(newdata)                             # parse new data
+        lat = newmsg.latitude                                       # save latitude
+        lng = newmsg.longitude                                      # save longitude
+        global gps
+        gps = str(lat) + "," + str(lng)                        # save gps data as string
 
 
 def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):        # print the data (meant for debugging purposes)
