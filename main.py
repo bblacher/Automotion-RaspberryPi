@@ -10,6 +10,7 @@ from imusensor.MPU9250 import MPU9250   # Used for getting MPU9250 readings
 from imusensor.filters import madgwick  # Used for the madgwick filter
 from datetime import datetime           # Used for the madgwick filter timing
 
+
 # Function definitions:
 def usb_automount():
     done = False
@@ -31,6 +32,7 @@ def usb_automount():
         timeout -= 1                                            # Decrease the timeout timer
         time.sleep(1)                                           # 1-Second delay
 
+
 def getGPS():
     newdata = ser.readline()                                    # get new data
     newmsg = pynmea2.parse(newdata)                             # parse new data
@@ -38,6 +40,7 @@ def getGPS():
     lng = newmsg.longitude                                      # save longitude
     gps = str(lat) + "," + str(lng)                             # save gps data as string
     return gps                                                  # return gps data
+
 
 if not os.path.exists('data'):  # If the data path doesn't exit, create it
     os.makedirs('data')
@@ -69,94 +72,100 @@ ser = serial.Serial(port, baudrate=9600)            # set serial communication o
 file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp\n")    # write the data legend into a new line
 if not imuerror:
     for i in range(150):                            # do the sensorfusion 150 times to get the initial wrong data out of the way
-        imu.readSensor()                            # main loop if the imu has no error
-        for i in range(10):                         # get new sensor readings
-            newTime = time.time()                   # run the sensorfusion algorythm 10x faster than the sensor gets read
-            dt = newTime - currTime                 # get the new time
-            currTime = newTime                      # calculate the difference between the last and the new time
-            sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
-                                            imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
-                                            imu.MagVals[2], dt)  # call the sensorfusion algorithm
-        time.sleep(0.01)
+        try:
+            imu.readSensor()                            # main loop if the imu has no error
+            for i in range(10):                         # get new sensor readings
+                newTime = time.time()                   # run the sensorfusion algorythm 10x faster than the sensor gets read
+                dt = newTime - currTime                 # get the new time
+                currTime = newTime                      # calculate the difference between the last and the new time
+                sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
+                                                imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
+                                                imu.MagVals[2], dt)  # call the sensorfusion algorithm
+            time.sleep(0.01)
+        except:
+            imuerror = True # Set imuerror True if there was an error
 
-    while 1:                                        # main loop if the imu has no error
-        imu.readSensor()                            # get new sensor readings
-        for i in range(10):                         # run the sensorfusion algorythm 10x faster than the sensor gets read
-            newTime = time.time()                   # get the new time
-            dt = newTime - currTime                 # calculate the difference between the last and the new time
-            currTime = newTime                      # write the new time into currTime for the next cycle
-            sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
-                                            imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
-                                            imu.MagVals[2], dt)  # call the sensorfusion algorithm
+    while not imuerror:                             # main loop if the imu has no error
+        try:
+            imu.readSensor()                            # get new sensor readings
+            for i in range(10):                         # run the sensorfusion algorythm 10x faster than the sensor gets read
+                newTime = time.time()                   # get the new time
+                dt = newTime - currTime                 # calculate the difference between the last and the new time
+                currTime = newTime                      # write the new time into currTime for the next cycle
+                sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
+                                                imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
+                                                imu.MagVals[2], dt)  # call the sensorfusion algorithm
 
-        if print_count == 10:                   # every 10 cycles write the data to the SD Card
+            if print_count == 10:                   # every 10 cycles write the data to the SD Card
 
-            now = str(datetime.now())           # get datetime
-            roll = sensorfusion.roll            # get roll
-            pitch = sensorfusion.pitch          # get pitch
-            yaw = sensorfusion.yaw              # get yaw
-            temp = imu.Temp                     # get temp
-            gps = getGPS()                      # get GPS data
+                now = str(datetime.now())           # get datetime
+                roll = sensorfusion.roll            # get roll
+                pitch = sensorfusion.pitch          # get pitch
+                yaw = sensorfusion.yaw              # get yaw
+                temp = imu.Temp                     # get temp
+                gps = getGPS()                      # get GPS data
 
-            a = math.radians(roll - 90)         # flip the roll data by -90 degrees and save it into a
-            b = math.radians(pitch + 90)        # flip the pitch data by 90 degrees and save it into a
+                a = math.radians(roll - 90)         # flip the roll data by -90 degrees and save it into a
+                b = math.radians(pitch + 90)        # flip the pitch data by 90 degrees and save it into a
 
-            flipa = math.radians(roll - 180)    # flip the roll data by -180 degrees and save it into flipa
+                flipa = math.radians(roll - 180)    # flip the roll data by -180 degrees and save it into flipa
 
-            if a < math.pi * -1:                # if a is now less than -pi
-                a = a + 2 * math.pi             # flip it by 2pi
+                if a < math.pi * -1:                # if a is now less than -pi
+                    a = a + 2 * math.pi             # flip it by 2pi
 
-            if b > math.pi:                     # if a is now more than pi
-                b = b - 2 * math.pi             # flip it by -2pi
+                if b > math.pi:                     # if a is now more than pi
+                    b = b - 2 * math.pi             # flip it by -2pi
 
-            if flipa < math.pi * -1:            # if flip a is now less than -pi
-                flipa = flipa + 2 * math.pi     # flip it by 2pi
+                if flipa < math.pi * -1:            # if flip a is now less than -pi
+                    flipa = flipa + 2 * math.pi     # flip it by 2pi
 
-            xoffs = math.sqrt(((g * math.tan(math.radians(90))) / math.sqrt((math.tan(math.radians(90)) ** 2) / (math.cos(b) ** 2) + 1)) ** 2)  # Offset in x
-            yoffs = g / math.sqrt((math.tan(0) ** 2) + (math.tan(a) ** 2) + 1)              # Offset in y
-            zoffs = g / math.sqrt(((1 / math.tan(a)) ** 2) + ((1 / math.tan(b)) ** 2) + 1)  # Offset in z
+                xoffs = math.sqrt(((g * math.tan(math.radians(90))) / math.sqrt((math.tan(math.radians(90)) ** 2) / (math.cos(b) ** 2) + 1)) ** 2)  # Offset in x
+                yoffs = g / math.sqrt((math.tan(0) ** 2) + (math.tan(a) ** 2) + 1)              # Offset in y
+                zoffs = g / math.sqrt(((1 / math.tan(a)) ** 2) + ((1 / math.tan(b)) ** 2) + 1)  # Offset in z
 
-            if pitch < 0:                       # check if x-Offset should be subtracted
-                ax = imu.AccelVals[0] - xoffs   # subtract x-Offset
-            elif pitch > 0:                     # check if x-Offset should be added
-                ax = imu.AccelVals[0] + xoffs   # add x-Offset
+                if pitch < 0:                       # check if x-Offset should be subtracted
+                    ax = imu.AccelVals[0] - xoffs   # subtract x-Offset
+                elif pitch > 0:                     # check if x-Offset should be added
+                    ax = imu.AccelVals[0] + xoffs   # add x-Offset
 
-            if flipa < 0:                       # check if y-Offset should be subtracted
-                ay = imu.AccelVals[1] - yoffs   # subtract y-Offset
-            elif flipa > 0:                     # check if y-Offset should be added
-                ay = imu.AccelVals[1] + yoffs   # add y-Offset
+                if flipa < 0:                       # check if y-Offset should be subtracted
+                    ay = imu.AccelVals[1] - yoffs   # subtract y-Offset
+                elif flipa > 0:                     # check if y-Offset should be added
+                    ay = imu.AccelVals[1] + yoffs   # add y-Offset
 
-            if a * b < 0:                       # check if z-Offset should be subtracted
-                az = imu.AccelVals[2] - zoffs   # subtract z-Offset
-            elif a * b > 0:                     # check if z-Offset should be added
-                az = imu.AccelVals[2] + zoffs   # add z-Offset
+                if a * b < 0:                       # check if z-Offset should be subtracted
+                    az = imu.AccelVals[2] - zoffs   # subtract z-Offset
+                elif a * b > 0:                     # check if z-Offset should be added
+                    az = imu.AccelVals[2] + zoffs   # add z-Offset
 
-            print("roll: " + str(roll))         # print roll
-            print("pitch: " + str(pitch))       # print pitch
-            print("yaw: " + str(yaw))           # print yaw
-            print("Ax " + str(ax))              # print ax
-            print("Ay " + str(ay))              # print ay
-            print("Az " + str(az))              # print az
-            print("Temp: " + str(temp))         # print temp
-            print("GPS: " + gps)                # print gps
+                print("roll: " + str(roll))         # print roll
+                print("pitch: " + str(pitch))       # print pitch
+                print("yaw: " + str(yaw))           # print yaw
+                print("Ax " + str(ax))              # print ax
+                print("Ay " + str(ay))              # print ay
+                print("Az " + str(az))              # print az
+                print("Temp: " + str(temp))         # print temp
+                print("GPS: " + gps)                # print gps
 
-            file.write(now + ",")               # write Time
-            file.write(str(roll) + ",")         # write roll
-            file.write(str(pitch) + ",")        # write pitch
-            file.write(str(yaw) + ",")          # write yaw
-            file.write(str(ax) + ",")           # write ax
-            file.write(str(ay) + ",")           # write ay
-            file.write(str(az) + ",")           # write az
-            file.write(str(temp) + ",")         # write temp
-            file.write(gps)                     # write gps
-            file.write("\n")                    # write newline
+                file.write(now + ",")               # write Time
+                file.write(str(roll) + ",")         # write roll
+                file.write(str(pitch) + ",")        # write pitch
+                file.write(str(yaw) + ",")          # write yaw
+                file.write(str(ax) + ",")           # write ax
+                file.write(str(ay) + ",")           # write ay
+                file.write(str(az) + ",")           # write az
+                file.write(str(temp) + ",")         # write temp
+                file.write(gps)                     # write gps
+                file.write("\n")                    # write newline
 
-            print_count = 0                     # reset print count
+                print_count = 0                     # reset print count
 
-        print_count += 1                        # up print count by 1
-        time.sleep(0.01)                        # wait for 10 milliseconds
+            print_count += 1                        # up print count by 1
+            time.sleep(0.01)                        # wait for 10 milliseconds
+        except:
+            imuerror = True # Set imuerror True if there was an error
 
-elif imuerror:
+if imuerror:
     roll = "error"                      # write error into imusensor values
     pitch = "error"                     # write error into imusensor values
     yaw = "error"                       # write error into imusensor values
