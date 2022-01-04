@@ -1,5 +1,0 @@
-datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng
-2022-01-03 21:45:36.532404,error,error,error,error,error,error,error,0
-2022-01-03 21:45:37.536781,error,error,error,error,error,error,error,0
-2022-01-03 21:45:38.538833,error,error,error,error,error,error,error,0
-2022-01-03 21:45:39.540484,error,error,error,error,error,error,error,0
