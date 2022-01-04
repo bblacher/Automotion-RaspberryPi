@@ -1,0 +1,25 @@
+datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng
+2022-01-03 21:10:17.285585,error,error,error,error,error,error,error,0
+2022-01-03 21:10:18.288974,error,error,error,error,error,error,error,0
+2022-01-03 21:10:19.290927,error,error,error,error,error,error,error,0
+2022-01-03 21:10:20.292340,error,error,error,error,error,error,error,0
+2022-01-03 21:10:21.293764,error,error,error,error,error,error,error,0
+2022-01-03 21:10:22.295160,error,error,error,error,error,error,error,0
+2022-01-03 21:10:23.296545,error,error,error,error,error,error,error,0
+2022-01-03 21:10:24.297886,error,error,error,error,error,error,error,0
+2022-01-03 21:10:25.299247,error,error,error,error,error,error,error,0
+2022-01-03 21:10:26.300633,error,error,error,error,error,error,error,0
+2022-01-03 21:10:27.302193,error,error,error,error,error,error,error,0
+2022-01-03 21:10:28.303770,error,error,error,error,error,error,error,0
+2022-01-03 21:10:29.305357,error,error,error,error,error,error,error,0
+2022-01-03 21:10:30.306745,error,error,error,error,error,error,error,0
+2022-01-03 21:10:31.308106,error,error,error,error,error,error,error,0
+2022-01-03 21:10:32.309468,error,error,error,error,error,error,error,0
+2022-01-03 21:10:33.310825,error,error,error,error,error,error,error,0
+2022-01-03 21:10:34.312216,error,error,error,error,error,error,error,0
+2022-01-03 21:10:35.313642,error,error,error,error,error,error,error,0
+2022-01-03 21:10:36.315025,error,error,error,error,error,error,error,0
+2022-01-03 21:10:37.316376,error,error,error,error,error,error,error,0
+2022-01-03 21:10:38.317724,error,error,error,error,error,error,error,0
+2022-01-03 21:10:39.319075,error,error,error,error,error,error,error,0
+2022-01-03 21:10:40.320412,error,error,error,error,error,error,error,0

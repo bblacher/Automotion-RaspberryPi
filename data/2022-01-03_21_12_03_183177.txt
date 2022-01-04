@@ -1,0 +1,8 @@
+datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng
+2022-01-03 21:12:03.198081,error,error,error,error,error,error,error,0
+2022-01-03 21:12:04.200086,error,error,error,error,error,error,error,0
+2022-01-03 21:12:05.201607,error,error,error,error,error,error,error,0
+2022-01-03 21:12:06.203051,error,error,error,error,error,error,error,0
+2022-01-03 21:12:07.204477,error,error,error,error,error,error,error,0
+2022-01-03 21:12:08.205940,error,error,error,error,error,error,error,0
+2022-01-03 21:12:09.207368,error,error,error,error,error,error,error,0

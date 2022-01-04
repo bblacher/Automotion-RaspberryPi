@@ -57,7 +57,6 @@ def get_gps():
     while not gpserror:
         try:
             ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
-            print(ser)
             newdata = ser.readline()  # get new data
             if newdata[0:6] == "$GPRMC":
                 newmsg = pynmea2.parse(newdata)                             # parse new data
@@ -191,6 +190,6 @@ while 1:                            # main loop
                 az = "error"  # write error into imusensor values
                 temp = "error"  # write error into imusensor values
 
-        print_data(roll, pitch, yaw, ax, ay, az, temp, gps)         # print the data (meant for debugging purposes)
-        write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps)    # write the data to the internal sd card
-        time.sleep(1)
+            print_data(roll, pitch, yaw, ax, ay, az, temp, gps)         # print the data (meant for debugging purposes)
+            write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps)    # write the data to the internal sd card
+            time.sleep(1)
