@@ -15,15 +15,15 @@ from datetime import datetime           # Used for the madgwick filter timing
 
 # Function definitions:
 def usb_automount():
-    # TODO this isn't working anymore
     done = False    # init done as false
-    while not done and not collecting_data:
+    while not done and not collecting_data:                     # only loop this while it's not done and in usb transfer mode
         ismounted = os.path.ismount("/media/usb0")              # check if a drive is mounted
         print("Device mounted: " + str(ismounted))              # output drive mount status
         if ismounted:                                           # if a drive is mounted, copy the datafile to it
             try:                                                # try to copy the file
-                shutil.copy("./data/*.txt", "/media/usb0")      # Copy the file to the drive
-                print("copied!")                                # Confirmation that the file was copied successfully
+                for filename in os.listdir("./data/"):          # loop through all datafiles
+                    shutil.copy("./data/"+filename, "/media/usb0")  # Copy the current file to the drive
+                    print("copied!")                            # Confirmation that a file was copied successfully
             except:                                             # Error-Case: tell the user that the file wasn't copied
                 print("copy error! (is there a datafile?)")     # Write the error
             while ismounted:                                    # while the device is mounted, tell the user to unplug it
@@ -87,10 +87,10 @@ def write_data(u_now, u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps): 
     file.write("\n")  # write newline
 
 
-def start_stop(pin):
-    global collecting_data
-    collecting_data = not collecting_data
-    if not collecting_data:
+def start_stop(pin):                        # function for switching modes
+    global collecting_data                  # use global collecting_data
+    collecting_data = not collecting_data   # invert collecting_data
+    if not collecting_data:                 # Also, close the file if data collection is stopped
         file.close()
 
 
@@ -112,22 +112,22 @@ except:                                             # Except-Statement for imuer
     print("MPU 9250: Error! (Not connected?)")      # Write error message
     imuerror = True                                 # Set imuerror true for later use
 
-collecting_data = False                             # init collecting_data
 g = 10                                              # set g as 10
-modeswitch = 40                                     # set the modeswitch Button to PIN 40
 port = "/dev/ttyAMA0"                               # define UART device
 ser = serial.Serial(port, baudrate=9600)            # set serial communication options
 
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(modeswitch, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.add_event_detect(modeswitch, GPIO.FALLING, callback=start_stop, bouncetime=1000)
+collecting_data = False                             # init collecting_data
+modeswitch = 40                                     # set the modeswitch Button to PIN 40
+GPIO.setmode(GPIO.BOARD)                            # Set GPIO to use Board pin layout
+GPIO.setup(modeswitch, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # turn on pullup and set as input modeswitch button)
+GPIO.add_event_detect(modeswitch, GPIO.FALLING, callback=start_stop, bouncetime=1000)   # Attach interrupt to modeswitch
 
-while 1:
-    if not collecting_data:
-        usb_automount()
+while 1:                            # main loop
+    if not collecting_data:         # if in usb-transfer mode
+        usb_automount()             # call usb_automount
 
-    elif collecting_data:
-        now = str(datetime.now())  # get datetime for the file name
+    elif collecting_data:            # if in data collection mode
+        now = str(datetime.now())    # get datetime for the file name
         now = now.replace(' ', '_')  # replace blank space with underline for the file name
         now = now.replace(':', '_')  # replace colon with underline for the file name
         now = now.replace('.', '_')  # replace dot with underline for the file name
