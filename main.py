@@ -53,14 +53,20 @@ def sensor_fusion():
 
 
 def get_gps():
-    # newdata = ser.readline()                                    # get new data
-    # newmsg = pynmea2.parse(newdata)                             # parse new data
-    # lat = newmsg.latitude                                       # save latitude
-    # lng = newmsg.longitude                                      # save longitude
-    # gps_data = str(lat) + "," + str(lng)                        # save gps data as string
-    # TODO Fix this
-    gps_data = "0,0"
-    return gps_data                                             # return gps data
+    gpserror = False
+    while not gpserror:
+        try:
+            ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
+            print(ser)
+            newdata = ser.readline()  # get new data
+            if newdata[0:6] == "$GPRMC":
+                newmsg = pynmea2.parse(newdata)                             # parse new data
+                lat = newmsg.latitude                                       # save latitude
+                lng = newmsg.longitude                                      # save longitude
+                global gps
+                gps = str(lat) + "," + str(lng)                        # save gps data as string
+        except:
+            gpserror = True
 
 
 def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):        # print the data (meant for debugging purposes)
@@ -114,7 +120,9 @@ except:                                             # Except-Statement for imuer
 
 g = 10                                              # set g as 10
 port = "/dev/ttyAMA0"                               # define UART device
-ser = serial.Serial(port, baudrate=9600)            # set serial communication options
+gps = "-1,-1"                                       # set gps to -1,-1 (error code)
+process_gps = Process(target=get_gps)               # create thread for the sensorfusion
+process_gps.start()                                 # start the thread for the sensorfusion
 
 collecting_data = False                             # init collecting_data
 modeswitch = 40                                     # set the modeswitch Button to PIN 40
@@ -183,7 +191,6 @@ while 1:                            # main loop
                 az = "error"  # write error into imusensor values
                 temp = "error"  # write error into imusensor values
 
-            gps = get_gps()                                             # get GPS data
-            print_data(roll, pitch, yaw, ax, ay, az, temp, gps)         # print the data (meant for debugging purposes)
-            write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps)    # write the data to the internal sd card
-            time.sleep(1)
+        print_data(roll, pitch, yaw, ax, ay, az, temp, gps)         # print the data (meant for debugging purposes)
+        write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps)    # write the data to the internal sd card
+        time.sleep(1)
