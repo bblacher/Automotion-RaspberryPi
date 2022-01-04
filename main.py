@@ -107,7 +107,7 @@ try:                                                # Error handling for the IMU
     imu.loadCalibDataFromFile("./config/Calib.json")  # load calibration data
     imuerror = False                                # Set imuerror false for later use
     process_sensorfusion = Process(target=sensor_fusion)  # create thread for the sensorfusion
-    process_sensorfusion.start()                    #start the thread for the sensorfusion
+    process_sensorfusion.start()                    # start the thread for the sensorfusion
 except:                                             # Except-Statement for imuerror
     print("MPU 9250: Error! (Not connected?)")      # Write error message
     imuerror = True                                 # Set imuerror true for later use
