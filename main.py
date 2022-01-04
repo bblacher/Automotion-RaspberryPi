@@ -7,10 +7,11 @@ import math         # Used for math operations
 import shutil       # Used for file operations
 import RPi.GPIO as GPIO  # Needed for GPIO actions (eg. Buttons)
 
-from multiprocessing import Process     # Used for multiprocessing
+from multiprocessing import Process, Queue     # Used for multiprocessing
 from imusensor.MPU9250 import MPU9250   # Used for getting MPU9250 readings
 from imusensor.filters import madgwick  # Used for the madgwick filter
 from datetime import datetime           # Used for the madgwick filter timing
+
 
 
 # Function definitions:
@@ -53,23 +54,24 @@ def sensor_fusion():
 
 
 def get_gps():
+    global gps
     gpserror = False
     while not gpserror:
         try:
             ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
-            newdata = ser.readline()  # get new data
-            print(type(newdata))
-            if newdata[2:8] == "$GPRMC":
-                print("testif")
+            newdata = str(ser.readline())  # get new data
+            newdata = newdata[2:-5]
+            if newdata[0:6] == "$GPRMC":
                 newmsg = pynmea2.parse(newdata)                             # parse new data
                 lat = newmsg.latitude                                       # save latitude
                 lng = newmsg.longitude                                      # save longitude
-                global gps
-                gps = str(lat) + "," + str(lng)                        # save gps data as string
+                gps_queue.put(str(lat) + "," + str(lng))                        # save gps data as string
+                print(type(gps))
+                print("lat:" +str(gps))
         except:
-            print("test")
+            gps = "-1,-1"                                       # set gps to -1,-1 (error code)
             gpserror = True
-
+    
 
 def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):        # print the data (meant for debugging purposes)
     print("roll: " + str(u_roll))  # print roll
@@ -123,6 +125,7 @@ except:                                             # Except-Statement for imuer
 g = 10                                              # set g as 10
 port = "/dev/ttyAMA0"                               # define UART device
 gps = "-1,-1"                                       # set gps to -1,-1 (error code)
+gps_queue = Queue()
 process_gps = Process(target=get_gps)               # create thread for the sensorfusion
 process_gps.start()                                 # start the thread for the sensorfusion
 
@@ -193,6 +196,7 @@ while 1:                            # main loop
                 az = "error"  # write error into imusensor values
                 temp = "error"  # write error into imusensor values
 
+            gps = gps_queue.get()
             print_data(roll, pitch, yaw, ax, ay, az, temp, gps)         # print the data (meant for debugging purposes)
             write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps)    # write the data to the internal sd card
             time.sleep(1)
