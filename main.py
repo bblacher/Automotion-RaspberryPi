@@ -49,7 +49,7 @@ def sensor_fusion():
                                                 imu.MagVals[2], dt)  # call the sensorfusion algorithm
             time.sleep(0.01)
         except:
-            imuerror = True
+            imuerror = True     # set imuerror true
 
 
 def get_gps():
@@ -68,7 +68,7 @@ def get_gps():
             gps_queue.put("error,error")                                          # set gps to -1,-1 (error code)
             gpserror = True
 
-
+# TODO Comment these lines
 def counter_rear_l(pin):
     global count_rear_l
     count_rear_l = count_rear_l + 1
@@ -153,8 +153,8 @@ try:                                                # Error handling for the IMU
     imu.begin()                                     # begin IMU readings
     imu.loadCalibDataFromFile("./config/Calib.json")  # load calibration data
     imuerror = False                                # Set imuerror false for later use
-    process_sensorfusion = Process(target=sensor_fusion)  # create thread for the sensorfusion
-    process_sensorfusion.start()                    # start the thread for the sensorfusion
+    process_sensorfusion = Process(target=sensor_fusion)  # create process for the sensorfusion
+    process_sensorfusion.start()                    # start the process for the sensorfusion
 except:                                             # Except-Statement for imuerror
     print("MPU 9250: Error! (Not connected?)")      # Write error message
     imuerror = True                                 # Set imuerror true for later use
@@ -163,34 +163,33 @@ g = 10                                              # set g as 10
 
 port = "/dev/ttyAMA0"                               # define UART device
 gps = "error,error"                                 # set gps to -1,-1 (error code)
-gps_queue = Queue()
-process_gps = Process(target=get_gps)               # create thread for the sensorfusion
-process_gps.start()                                 # start the thread for the sensorfusion
+gps_queue = Queue()                                 # create gps queue
+gps_process = Process(target=get_gps)               # create process for the gps module
+gps_process.start()                                 # start the process for the gps module
 
 collecting_data = False                             # init collecting_data
 modeswitch = 40                                     # set the modeswitch Button to PIN 40
 GPIO.setmode(GPIO.BOARD)                            # Set GPIO to use Board pin layout
-GPIO.setup(modeswitch, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # turn on pullup and set as input modeswitch button)
+GPIO.setup(modeswitch, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # turn on pullup and set as input (modeswitch button)
 GPIO.add_event_detect(modeswitch, GPIO.FALLING, callback=start_stop, bouncetime=1000)   # Attach interrupt to modeswitch
 
-sensor_rear_L = 11
-sensor_rear_R = 12
-sensor_front_L = 13
-sensor_front_R = 15
+sensor_rear_L = 11      # set rear_L pin
+sensor_rear_R = 12      # set rear_R pin
+sensor_front_L = 13     # set front_L pin
+sensor_front_R = 15     # set front_R pin
 
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(sensor_rear_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(sensor_rear_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(sensor_front_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(sensor_front_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.add_event_detect(sensor_rear_L, GPIO.RISING, callback=counter_rear_l)
-GPIO.add_event_detect(sensor_rear_R, GPIO.RISING, callback=counter_rear_r)
-GPIO.add_event_detect(sensor_front_L, GPIO.RISING, callback=counter_front_l)
-GPIO.add_event_detect(sensor_front_R, GPIO.RISING, callback=counter_front_r)
+GPIO.setup(sensor_rear_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (rear_L)
+GPIO.setup(sensor_rear_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (rear_R)
+GPIO.setup(sensor_front_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # turn on pulldown and set as input (front_L)
+GPIO.setup(sensor_front_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # turn on pulldown and set as input (front_R)
+GPIO.add_event_detect(sensor_rear_L, GPIO.RISING, callback=counter_rear_l)  # Attach interrupt to rear_L
+GPIO.add_event_detect(sensor_rear_R, GPIO.RISING, callback=counter_rear_r)  # Attach interrupt to rear_R
+GPIO.add_event_detect(sensor_front_L, GPIO.RISING, callback=counter_front_l)    # Attach interrupt to front_L
+GPIO.add_event_detect(sensor_front_R, GPIO.RISING, callback=counter_front_r)    # Attach interrupt to front_R
 
-rpm_queue = Queue()
-rpm_process = Process(target=get_rpm)
-rpm_process.start()
+rpm_queue = Queue()                     # create queue for the rpm data
+rpm_process = Process(target=get_rpm)   # create process for the gps module
+rpm_process.start()                     # start process for the gps module
 
 while 1:                            # main loop
     if not collecting_data:         # if in usb-transfer mode
@@ -253,8 +252,8 @@ while 1:                            # main loop
                 temp = "error"  # write error into imusensor values
 
             now = datetime.now()                    # get datetime
-            gps = gps_queue.get()
-            rpm = rpm_queue.get()
+            gps = gps_queue.get()                   # get gps data
+            rpm = rpm_queue.get()                   # get rpm data
             print_data(roll, pitch, yaw, ax, ay, az, temp, gps, rpm)         # print the data (meant for debugging purposes)
             write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps, rpm)    # write the data to the internal sd card
             time.sleep(1)
