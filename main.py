@@ -52,13 +52,20 @@ def sensor_fusion():
 
 
 def get_gps():
-    newdata = ser.readline()                                    # get new data
-    if newdata[0:6] == "$GPRMC":
-        newmsg = pynmea2.parse(newdata)                             # parse new data
-        lat = newmsg.latitude                                       # save latitude
-        lng = newmsg.longitude                                      # save longitude
-        global gps
-        gps = str(lat) + "," + str(lng)                        # save gps data as string
+    gpserror = False
+    while not gpserror:
+        try:
+            ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
+            print(ser)
+            newdata = ser.readline()  # get new data
+            if newdata[0:6] == "$GPRMC":
+                newmsg = pynmea2.parse(newdata)                             # parse new data
+                lat = newmsg.latitude                                       # save latitude
+                lng = newmsg.longitude                                      # save longitude
+                global gps
+                gps = str(lat) + "," + str(lng)                        # save gps data as string
+        except:
+            gpserror = True
 
 
 def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps):        # print the data (meant for debugging purposes)
@@ -103,7 +110,7 @@ try:                                                # Error handling for the IMU
     imu.loadCalibDataFromFile("./config/Calib.json")  # load calibration data
     imuerror = False                                # Set imuerror false for later use
     process_sensorfusion = Process(target=sensor_fusion)  # create thread for the sensorfusion
-    process_sensorfusion.start()                     #start the thread for the sensorfusion
+    process_sensorfusion.start()                    # start the thread for the sensorfusion
 except:                                             # Except-Statement for imuerror
     print("MPU 9250: Error! (Not connected?)")      # Write error message
     imuerror = True                                 # Set imuerror true for later use
@@ -111,7 +118,7 @@ except:                                             # Except-Statement for imuer
 g = 10                                              # set g as 10
 
 port = "/dev/ttyAMA0"                               # define UART device
-ser = serial.Serial(port, baudrate=9600, timeout=0.5)            # set serial communication options
+gps = -1
 process_gps = Process(target=get_gps)  # create thread for the sensorfusion
 process_gps.start()  # start the thread for the sensorfusion
 
