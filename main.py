@@ -11,6 +11,7 @@ from imusensor.MPU9250 import MPU9250   # Used for getting MPU9250 readings
 from imusensor.filters import madgwick  # Used for the madgwick filter
 from datetime import datetime           # Used for the madgwick filter timing
 
+
 # Function definitions:
 def usb_automount():
     done = False    # init done as false
@@ -118,14 +119,14 @@ except:                                             # Except-Statement for imuer
 g = 10                                              # set g as 10
 
 port = "/dev/ttyAMA0"                               # define UART device
-gps = -1
-process_gps = Process(target=get_gps)  # create thread for the sensorfusion
-process_gps.start()  # start the thread for the sensorfusion
+gps = "-1,-1"                                       # set gps to -1,-1 (error code)
+process_gps = Process(target=get_gps)               # create thread for the sensorfusion
+process_gps.start()                                 # start the thread for the sensorfusion
 
 file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng\n")    # write the data legend into a new line
 
 while 1:
-        now = datetime.now()                    # get datetime
+        now = datetime.now()                        # get datetime
         if not imuerror:
             roll = sensorfusion.roll                # get roll
             pitch = sensorfusion.pitch              # get pitch
