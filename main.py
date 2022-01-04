@@ -57,9 +57,9 @@ def get_gps():
     while not gpserror:
         try:
             ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
-            newdata = str(ser.readline())  # get new data
-            newdata = newdata[2:-5]
-            if newdata[0:6] == "$GPRMC":
+            newdata = str(ser.readline())                                   # get new data
+            newdata = newdata[2:-5]                                         # delete unwanted characters
+            if newdata[0:6] == "$GPRMC":                                    # check if the right string is available
                 newmsg = pynmea2.parse(newdata)                             # parse new data
                 lat = newmsg.latitude                                       # save latitude
                 lng = newmsg.longitude                                      # save longitude
