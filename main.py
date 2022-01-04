@@ -58,13 +58,16 @@ def get_gps():
         try:
             ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
             newdata = ser.readline()  # get new data
-            if newdata[0:6] == "$GPRMC":
+            print(type(newdata))
+            if newdata[2:8] == "$GPRMC":
+                print("testif")
                 newmsg = pynmea2.parse(newdata)                             # parse new data
                 lat = newmsg.latitude                                       # save latitude
                 lng = newmsg.longitude                                      # save longitude
                 global gps
                 gps = str(lat) + "," + str(lng)                        # save gps data as string
         except:
+            print("test")
             gpserror = True
 
 
@@ -123,7 +126,7 @@ gps = "-1,-1"                                       # set gps to -1,-1 (error co
 process_gps = Process(target=get_gps)               # create thread for the sensorfusion
 process_gps.start()                                 # start the thread for the sensorfusion
 
-collecting_data = False                             # init collecting_data
+collecting_data = True                             # init collecting_data
 modeswitch = 40                                     # set the modeswitch Button to PIN 40
 GPIO.setmode(GPIO.BOARD)                            # Set GPIO to use Board pin layout
 GPIO.setup(modeswitch, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # turn on pullup and set as input modeswitch button)
