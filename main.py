@@ -13,7 +13,6 @@ from imusensor.filters import madgwick  # Used for the madgwick filter
 from datetime import datetime           # Used for the madgwick filter timing
 
 
-
 # Function definitions:
 def usb_automount():
     done = False    # init done as false
@@ -54,7 +53,6 @@ def sensor_fusion():
 
 
 def get_gps():
-    global gps
     gpserror = False
     while not gpserror:
         try:
@@ -65,11 +63,9 @@ def get_gps():
                 newmsg = pynmea2.parse(newdata)                             # parse new data
                 lat = newmsg.latitude                                       # save latitude
                 lng = newmsg.longitude                                      # save longitude
-                gps_queue.put(str(lat) + "," + str(lng))                        # save gps data as string
-                print(type(gps))
-                print("lat:" +str(gps))
+                gps_queue.put(str(lat) + "," + str(lng))                    # save gps data as string
         except:
-            gps = "-1,-1"                                       # set gps to -1,-1 (error code)
+            gps_queue.put("error,error")                                          # set gps to -1,-1 (error code)
             gpserror = True
     
 
@@ -124,12 +120,12 @@ except:                                             # Except-Statement for imuer
 
 g = 10                                              # set g as 10
 port = "/dev/ttyAMA0"                               # define UART device
-gps = "-1,-1"                                       # set gps to -1,-1 (error code)
+gps = "error,error"                                 # set gps to -1,-1 (error code)
 gps_queue = Queue()
 process_gps = Process(target=get_gps)               # create thread for the sensorfusion
 process_gps.start()                                 # start the thread for the sensorfusion
 
-collecting_data = True                             # init collecting_data
+collecting_data = False                             # init collecting_data
 modeswitch = 40                                     # set the modeswitch Button to PIN 40
 GPIO.setmode(GPIO.BOARD)                            # Set GPIO to use Board pin layout
 GPIO.setup(modeswitch, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # turn on pullup and set as input modeswitch button)
