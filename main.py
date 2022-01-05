@@ -7,7 +7,7 @@ import math         # Used for math operations
 import shutil       # Used for file operations
 import RPi.GPIO as GPIO  # Needed for GPIO actions (eg. Buttons)
 
-from multiprocessing import Process, Queue     # Used for multiprocessing
+from multiprocessing import Process, Queue  # Used for multiprocessing
 from imusensor.MPU9250 import MPU9250   # Used for getting MPU9250 readings
 from imusensor.filters import madgwick  # Used for the madgwick filter
 from datetime import datetime           # Used for the madgwick filter timing
@@ -16,7 +16,7 @@ from datetime import datetime           # Used for the madgwick filter timing
 # Function definitions:
 def usb_automount():
     done = False    # init done as false
-    while not done and not collecting_data:                     # only loop this while it's not done and in usb transfer mode
+    while not done and not collecting_data.get():               # only loop this while it's not done and in usb transfer mode
         ismounted = os.path.ismount("/media/usb0")              # check if a drive is mounted
         print("Device mounted: " + str(ismounted))              # output drive mount status
         if ismounted:                                           # if a drive is mounted, copy the datafile to it
@@ -35,9 +35,8 @@ def usb_automount():
 
 
 def sensor_fusion():
-    global imuerror
     currtime = time.time()
-    while not imuerror:
+    while not imuerror.get():
         try:
             imu.readSensor()
             for fusionloop in range(10):  # get new sensor readings
@@ -49,62 +48,54 @@ def sensor_fusion():
                                                 imu.MagVals[2], dt)  # call the sensorfusion algorithm
             time.sleep(0.01)
         except:
-            imuerror = True     # set imuerror true
+            imuerror.put(True)     # set imuerror true
 
 
 def get_gps():
     gpserror = False
     while not gpserror:
         try:
-            ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
             newdata = str(ser.readline())                                   # get new data
             newdata = newdata[2:-5]                                         # delete unwanted characters
-            if newdata[0:6] == "$GPRMC":                                    # check if the right string is available
-                newmsg = pynmea2.parse(newdata)                             # parse new data
-                lat = newmsg.latitude                                       # save latitude
-                lng = newmsg.longitude                                      # save longitude
-                gps_queue.put(str(lat) + "," + str(lng))                    # save gps data as string
+            if newdata[0:6] == "$GPRMC":  # check if the right string is available
+                newmsg = pynmea2.parse(newdata)  # parse new data
+                lat = newmsg.latitude  # save latitude
+                lng = newmsg.longitude  # save longitude
+                gps_queue.put(str(lat) + "," + str(lng))  # save gps data as string
+
         except:
-            gps_queue.put("error,error")                                          # set gps to -1,-1 (error code)
+            gps_queue.put("error,error")                                    # set gps to -1,-1 (error code)
             gpserror = True
 
-# TODO Comment these lines
-def counter_rear_l(pin):
-    global count_rear_l
-    count_rear_l = count_rear_l + 1
+
+def counter_rear_l(pin):                        # function for the rear left wheel count
+    count_rear_l.put(count_rear_l.get() + 1)    # increase count by 1
 
 
-def counter_rear_r(pin):
-    global count_rear_r
-    count_rear_r = count_rear_r + 1
+def counter_rear_r(pin):                        # function for the rear right wheel count
+    count_rear_r.put(count_rear_r.get() + 1)    # increase count by 1
 
 
-def counter_front_l(pin):
-    global count_front_l
-    count_front_l = count_front_l + 1
+def counter_front_l(pin):                       # function for the front left wheel count
+    count_front_l.put(count_front_l.get() + 1)  # increase count by 1
 
 
-def counter_front_r(pin):
-    global count_front_r
-    count_front_r = count_front_r + 1
+def counter_front_r(pin):                       # function for the front right wheel count
+    count_front_r.put(count_front_r.get() + 1)  # increase count by 1
 
 
-def get_rpm():
-    d_wheel = 0.14
-    sample_time = 1
-    slots_rear = 20
-    slots_front = 20
+def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for the rpm calculations
     while 1:
-        time.sleep(sample_time)
-        rpm_rear_l = ((float(count_rear_l) / slots_rear) / sample_time) * 60
-        rpm_rear_r = ((float(count_rear_r) / slots_rear) / sample_time) * 60
-        rpm_front_l = ((float(count_front_l) / slots_front) / sample_time) * 60
-        rpm_front_r = ((float(count_front_r) / slots_front) / sample_time) * 60
-        vel_ms = d_wheel * math.pi * (float((rpm_front_l + rpm_front_r) / 2) / 60)
-        count_rear_l = 0
-        count_rear_r = 0
-        count_front_l = 0
-        count_front_r = 0
+        time.sleep(sample_time)     # sleep for the sample time
+        rpm_rear_l = ((float(count_rear_l.get()) / slots_rear) / sample_time) * 60  # calculate the rpm
+        rpm_rear_r = ((float(count_rear_r.get()) / slots_rear) / sample_time) * 60  # calculate the rpm
+        rpm_front_l = ((float(count_front_l.get()) / slots_front) / sample_time) * 60   # calculate the rpm
+        rpm_front_r = ((float(count_front_r.get()) / slots_front) / sample_time) * 60   # calculate the rpm
+        vel_ms = d_wheel * math.pi * (float((rpm_front_l + rpm_front_r) / 2) / 60)  # calculate the velocity as an average of the two front wheels
+        count_rear_l.put(0)     # Reset to 0 after calculation
+        count_rear_r.put(0)     # Reset to 0 after calculation
+        count_front_l.put(0)        # Reset to 0 after calculation
+        count_front_r.put(0)        # Reset to 0 after calculation
         rpm_queue.put(str(rpm_rear_l)+","+str(rpm_rear_r)+","+str(rpm_front_l)+","+str(rpm_front_r)+","+str(vel_ms))
 
 
@@ -134,17 +125,16 @@ def write_data(u_now, u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps, u
     file.write("\n")  # write newline
 
 
-def start_stop(pin):                        # function for switching modes
-    global collecting_data                  # use global collecting_data
-    collecting_data = not collecting_data   # invert collecting_data
-    if not collecting_data:                 # Also, close the file if data collection is stopped
+def start_stop(pin):                            # function for switching modes
+    collecting_data.put(not collecting_data.get())    # invert collecting_data
+    if not collecting_data.get():               # Also, close the file if data collection is stopped
         file.close()
 
 
 if not os.path.exists('data'):  # If the data path doesn't exit, create it
     os.makedirs('data')
 
-
+imuerror = Queue()                                  # init imuerror
 try:                                                # Error handling for the IMU
     sensorfusion = madgwick.Madgwick(0.5)           # set Madgwick as the sensorfusion-algorythm
     address = 0x68                                  # MPU9250 I2C-Address
@@ -152,22 +142,25 @@ try:                                                # Error handling for the IMU
     imu = MPU9250.MPU9250(bus, address)             # set MPU9250 as the selected IMU
     imu.begin()                                     # begin IMU readings
     imu.loadCalibDataFromFile("./config/Calib.json")  # load calibration data
-    imuerror = False                                # Set imuerror false for later use
+    imuerror.put(False)                             # Set imuerror false for later use
     process_sensorfusion = Process(target=sensor_fusion)  # create process for the sensorfusion
     process_sensorfusion.start()                    # start the process for the sensorfusion
+
 except:                                             # Except-Statement for imuerror
     print("MPU 9250: Error! (Not connected?)")      # Write error message
-    imuerror = True                                 # Set imuerror true for later use
+    imuerror.put(True)                              # Set imuerror true for later use
 
 g = 10                                              # set g as 10
 
 port = "/dev/ttyAMA0"                               # define UART device
+ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
 gps = "error,error"                                 # set gps to -1,-1 (error code)
 gps_queue = Queue()                                 # create gps queue
 gps_process = Process(target=get_gps)               # create process for the gps module
 gps_process.start()                                 # start the process for the gps module
 
-collecting_data = False                             # init collecting_data
+collecting_data = Queue()                           # init collecting_data
+collecting_data.put(False)                          # default to False
 modeswitch = 40                                     # set the modeswitch Button to PIN 40
 GPIO.setmode(GPIO.BOARD)                            # Set GPIO to use Board pin layout
 GPIO.setup(modeswitch, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # turn on pullup and set as input (modeswitch button)
@@ -180,30 +173,38 @@ sensor_front_R = 15     # set front_R pin
 
 GPIO.setup(sensor_rear_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (rear_L)
 GPIO.setup(sensor_rear_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (rear_R)
-GPIO.setup(sensor_front_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # turn on pulldown and set as input (front_L)
-GPIO.setup(sensor_front_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # turn on pulldown and set as input (front_R)
+GPIO.setup(sensor_front_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (front_L)
+GPIO.setup(sensor_front_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (front_R)
 GPIO.add_event_detect(sensor_rear_L, GPIO.RISING, callback=counter_rear_l)  # Attach interrupt to rear_L
 GPIO.add_event_detect(sensor_rear_R, GPIO.RISING, callback=counter_rear_r)  # Attach interrupt to rear_R
 GPIO.add_event_detect(sensor_front_L, GPIO.RISING, callback=counter_front_l)    # Attach interrupt to front_L
 GPIO.add_event_detect(sensor_front_R, GPIO.RISING, callback=counter_front_r)    # Attach interrupt to front_R
 
+count_rear_l = Queue()                  # create Queue for the count_rear_l variable
+count_rear_r = Queue()                  # create Queue for the count_rear_r variable
+count_front_l = Queue()                 # create Queue for the count_front_l variable
+count_front_r = Queue()                 # create Queue for the count_front_r variable
+count_rear_l.put(0)                     # put 0 by default
+count_rear_r.put(0)                     # put 0 by default
+count_front_l.put(0)                    # put 0 by default
+count_front_r.put(0)                    # put 0 by default
 rpm_queue = Queue()                     # create queue for the rpm data
-rpm_process = Process(target=get_rpm)   # create process for the gps module
+rpm_process = Process(target=get_rpm, args=(0.14, 1, 20, 20))   # create process for the gps module (args = d_wheel, sample_time, slots_rear, slots_front)
 rpm_process.start()                     # start process for the gps module
 
 while 1:                            # main loop
-    if not collecting_data:         # if in usb-transfer mode
+    if not collecting_data.get():   # if in usb-transfer mode
         usb_automount()             # call usb_automount
 
-    elif collecting_data:            # if in data collection mode
+    elif collecting_data.get():            # if in data collection mode
         now = str(datetime.now())    # get datetime for the file name
         now = now.replace(' ', '_')  # replace blank space with underline for the file name
         now = now.replace(':', '_')  # replace colon with underline for the file name
         now = now.replace('.', '_')  # replace dot with underline for the file name
         file = open("./data/" + now + ".txt", 'w')  # create and open a new datafile
         file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng\n")  # write the data legend into a new line
-        while collecting_data:
-            if not imuerror:
+        while collecting_data.get():
+            if not imuerror.get():
                 roll = sensorfusion.roll                # get roll
                 pitch = sensorfusion.pitch              # get pitch
                 yaw = sensorfusion.yaw                  # get yaw
@@ -242,7 +243,7 @@ while 1:                            # main loop
                 elif a * b > 0:                     # check if z-Offset should be added
                     az = imu.AccelVals[2] + zoffs   # add z-Offset
 
-            elif imuerror:
+            elif imuerror.get():
                 roll = "error"  # write error into imusensor values
                 pitch = "error"  # write error into imusensor values
                 yaw = "error"  # write error into imusensor values
