@@ -16,7 +16,8 @@ from datetime import datetime           # Used for the madgwick filter timing
 # Function definitions:
 def usb_automount():
     done = False    # init done as false
-    while not done:                                             # only loop this while it's not done
+    global collecting_data
+    while not done and not collecting_data:                     # only loop this while it's not done and not collecting data
         ismounted = os.path.ismount("/media/usb0")              # check if a drive is mounted
         print("Device mounted: " + str(ismounted))              # output drive mount status
         if ismounted:                                           # if a drive is mounted, copy the datafile to it
@@ -77,65 +78,77 @@ def get_gps():
 
 
 def counter_rear_l(pin):                        # function for the rear left wheel count
-    global count_rear_l                         # use global var
-    count_rear_l += count_rear_l                # increase count by 1
-    while not count_rear_L.empty():
-        count_rear_L.get()
-    count_rear_L.put(count_rear_r)
+    if not count_rear_L.empty():
+        tempvar = count_rear_L.get() + 1
+        while not count_rear_L.empty():
+            count_rear_L.get()
+        count_rear_L.put(tempvar)
 
 
 def counter_rear_r(pin):                        # function for the rear right wheel count
-    global count_rear_r                         # use global var
-    count_rear_r += count_rear_r                # increase count by 1
-    while not count_rear_R.empty():
-        count_rear_R.get()
-    count_rear_R.put(count_rear_r)
+    if not count_rear_R.empty():
+        tempvar = count_rear_R.get() + 1
+        while not count_rear_R.empty():
+            count_rear_R.get()
+        count_rear_R.put(tempvar)
 
 
-def counter_front_l(pin):                       # function for the front left wheel count
-    global count_front_l                        # use global var
-    count_front_l += count_front_l              # increase count by 1
-    while not count_front_L.empty():
-        count_front_L.get()
-    count_front_L.put(count_front_l)
+def counter_front_l(pin):  # function for the front left wheel count
+    if not count_front_L.empty():
+        tempvar = count_front_L.get() + 1
+        while not count_front_L.empty():
+            count_front_L.get()
+        count_front_L.put(tempvar)
 
 
-def counter_front_r(pin):                       # function for the front right wheel count
-    global count_front_r                        # use global var
-    count_front_r += count_front_r              # increase count by 1
-    while not count_front_R.empty():
-        count_front_R.get()
-    count_front_R.put(count_front_r)
+def counter_front_r(pin):  # function for the front right wheel count
+    if not count_front_R.empty():
+        tempvar = count_front_R.get() + 1
+        while not count_front_R.empty():
+            count_front_R.get()
+        count_front_R.put(tempvar)
 
 
 def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for the rpm calculations
-    local_count_rear_l = 0   # init as 0
-    local_count_rear_r = 0   # init as 0
-    local_count_front_l = 0  # init as 0
-    local_count_front_r = 0  # init as 0
     while 1:
         if not count_rear_L.empty():
             local_count_rear_l = count_rear_L.get()
+        else:
+            local_count_rear_l = 0
+
         if not count_rear_R.empty():
             local_count_rear_r = count_rear_R.get()
+        else:
+            local_count_rear_r = 0
+
         if not count_front_L.empty():
             local_count_front_l = count_front_L.get()
+        else:
+            local_count_front_l = 0
+
         if not count_front_R.empty():
             local_count_front_r = count_front_R.get()
+        else:
+            local_count_front_r = 0
+
         time.sleep(sample_time)     # sleep for the sample time
         rpm_rear_l = ((float(local_count_rear_l) / slots_rear) / sample_time) * 60  # calculate the rpm
         rpm_rear_r = ((float(local_count_rear_r) / slots_rear) / sample_time) * 60  # calculate the rpm
         rpm_front_l = ((float(local_count_front_l) / slots_front) / sample_time) * 60   # calculate the rpm
         rpm_front_r = ((float(local_count_front_r) / slots_front) / sample_time) * 60   # calculate the rpm
         vel_ms = d_wheel * math.pi * (float((rpm_front_l + rpm_front_r) / 2) / 60)  # calculate the velocity as an average of the two front wheels
+        while not count_rear_L.empty():
+            count_rear_L.get()
         count_rear_L.put(0)     # Reset to 0 after calculation
+        while not count_rear_R.empty():
+            count_rear_R.get()
         count_rear_R.put(0)     # Reset to 0 after calculation
+        while not count_front_L.empty():
+            count_front_L.get()
         count_front_L.put(0)    # Reset to 0 after calculation
+        while not count_front_R.empty():
+            count_front_R.get()
         count_front_R.put(0)    # Reset to 0 after calculation
-        local_count_rear_l = 0     # Reset to 0 after calculation
-        local_count_rear_r = 0     # Reset to 0 after calculation
-        local_count_front_l = 0    # Reset to 0 after calculation
-        local_count_front_r = 0    # Reset to 0 after calculation
         rpm_queue.put(str(rpm_rear_l)+","+str(rpm_rear_r)+","+str(rpm_front_l)+","+str(rpm_front_r)+","+str(vel_ms))    # put the data into the queue
 
 
@@ -209,10 +222,6 @@ sensor_rear_L = 11      # set rear_L pin
 sensor_rear_R = 12      # set rear_R pin
 sensor_front_L = 13     # set front_L pin
 sensor_front_R = 15     # set front_R pin
-count_rear_l = 0                     # init as 0
-count_rear_r = 0                     # init as 0
-count_front_l = 0                    # init as 0
-count_front_r = 0                    # init as 0
 count_rear_L = SimpleQueue()         # create SimpleQueue
 count_rear_R = SimpleQueue()         # create SimpleQueue
 count_front_L = SimpleQueue()        # create SimpleQueue
