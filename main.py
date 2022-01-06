@@ -111,6 +111,8 @@ def counter_front_r(pin):  # function for the front right wheel count
 
 def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for the rpm calculations
     while 1:
+        time.sleep(sample_time)  # sleep for the sample time
+
         if not count_rear_L.empty():
             local_count_rear_l = count_rear_L.get()
         else:
@@ -131,7 +133,6 @@ def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for t
         else:
             local_count_front_r = 0
 
-        time.sleep(sample_time)     # sleep for the sample time
         rpm_rear_l = ((float(local_count_rear_l) / slots_rear) / sample_time) * 60  # calculate the rpm
         rpm_rear_r = ((float(local_count_rear_r) / slots_rear) / sample_time) * 60  # calculate the rpm
         rpm_front_l = ((float(local_count_front_l) / slots_front) / sample_time) * 60   # calculate the rpm
