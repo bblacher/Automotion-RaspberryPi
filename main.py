@@ -141,13 +141,9 @@ def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for t
         rpm_front_r = ((float(local_count_front_r) / slots_front) / sample_time) * 60   # calculate the rpm
         vel_ms = d_wheel * math.pi * (float((rpm_front_l + rpm_front_r) / 2) / 60)  # calculate the velocity as an average of the two front wheels
         empty_queue(count_rear_L)   # empty the queue
-        count_rear_L.put(0)     # Reset to 0 after calculation
         empty_queue(count_rear_R)   # empty the queue
-        count_rear_R.put(0)     # Reset to 0 after calculation
         empty_queue(count_front_L)  # empty the queue
-        count_front_L.put(0)    # Reset to 0 after calculation
         empty_queue(count_front_R)  # empty the queue
-        count_front_R.put(0)    # Reset to 0 after calculation
         rpm_queue.put(str(rpm_rear_l)+","+str(rpm_rear_r)+","+str(rpm_front_l)+","+str(rpm_front_r)+","+str(vel_ms))    # put the data into the queue
 
 
@@ -238,7 +234,7 @@ GPIO.add_event_detect(sensor_rear_R, GPIO.RISING, callback=counter_rear_r)  # At
 GPIO.add_event_detect(sensor_front_L, GPIO.RISING, callback=counter_front_l)    # Attach interrupt to front_L
 GPIO.add_event_detect(sensor_front_R, GPIO.RISING, callback=counter_front_r)    # Attach interrupt to front_R
 rpm_queue = SimpleQueue()                     # create queue for the rpm data
-rpm_process = Process(target=get_rpm, args=(0.14, 1, 20, 20))   # create process for the gps module (args = d_wheel, sample_time, slots_rear, slots_front)
+rpm_process = Process(target=get_rpm, args=(0.14, 1, 2, 2))   # create process for the gps module (args = d_wheel, sample_time, slots_rear, slots_front)
 rpm_process.start()                     # start process for the gps module
 
 while 1:                            # main loop
