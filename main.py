@@ -253,7 +253,7 @@ while 1:                            # main loop
         now = now.replace(':', '_')  # replace colon with underline for the file name
         now = now.replace('.', '_')  # replace dot with underline for the file name
         file = open("./data/" + now + ".txt", 'w')  # create and open a new datafile
-        file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng\n")  # write the data legend into a new line
+        file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng,rpm_rear_l,rpm_rear_r,rpm_front_l,rpm_front_r,vel_ms\n")  # write the data legend into a new line
         while collecting_data:
             if not imuerror.empty():
                 main_imuerror = imuerror.get()
