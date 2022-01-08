@@ -14,6 +14,11 @@ from datetime import datetime           # Used for the madgwick filter timing
 
 
 # Function definitions:
+def empty_queue(queue):         # empty a given queue
+    while not queue.empty():    # while it's not empty
+        queue.get()             # get elements from it
+
+
 def usb_automount():
     done = False    # init done as false
     global collecting_data
@@ -36,8 +41,8 @@ def usb_automount():
 
 
 def sensor_fusion():
-    currtime = time.time()
-    mpuerror = False
+    currtime = time.time()      # get the current time for the first sensorfusion
+    mpuerror = False            # init mpuerror as false
     while not mpuerror:
         try:
             imu.readSensor()
@@ -50,14 +55,13 @@ def sensor_fusion():
                                                 imu.MagVals[2], dt)  # call the sensorfusion algorithm
             time.sleep(0.01)
         except:
-            mpuerror = True
-            while not imuerror.empty():
-                imuerror.get()
-            imuerror.put(True)     # set imuerror true
+            mpuerror = True         # set imuerror true
+            empty_queue(imuerror)   # empty the queue
+            imuerror.put(True)      # set imuerror true
 
 
 def get_gps():
-    gpserror = False
+    gpserror = False        # set gpserror false
     while not gpserror:
         try:
             newdata = str(ser.readline())   # get new data
@@ -66,47 +70,45 @@ def get_gps():
                 newmsg = pynmea2.parse(newdata)  # parse new data
                 lat = newmsg.latitude  # save latitude
                 lng = newmsg.longitude  # save longitude
-                while not gps_queue.empty():
-                    gps_queue.get()
+                empty_queue(gps_queue)  # empty the queue
                 gps_queue.put(str(lat) + "," + str(lng))  # save gps data as string
 
         except:
-            while not gps_queue.empty():
-                gps_queue.get()
+            empty_queue(gps_queue)  # empty the queue
             gps_queue.put("error,error")    # set gps to error
             gpserror = True
 
 
 def counter_rear_l(pin):                        # function for the rear left wheel count
-    if not count_rear_L.empty():
+    if not count_rear_L.empty():                # if the queue isn't empty, increase the count by 1
         tempvar = count_rear_L.get() + 1
-        while not count_rear_L.empty():
-            count_rear_L.get()
         count_rear_L.put(tempvar)
+    else:                                       # else, put 1 into the queue
+        count_rear_L.put(1)
 
 
 def counter_rear_r(pin):                        # function for the rear right wheel count
-    if not count_rear_R.empty():
+    if not count_rear_R.empty():                # if the queue isn't empty, increase the count by 1
         tempvar = count_rear_R.get() + 1
-        while not count_rear_R.empty():
-            count_rear_R.get()
         count_rear_R.put(tempvar)
+    else:                                       # else, put 1 into the queue
+        count_rear_R.put(1)
 
 
 def counter_front_l(pin):  # function for the front left wheel count
-    if not count_front_L.empty():
+    if not count_front_L.empty():               # if the queue isn't empty, increase the count by 1
         tempvar = count_front_L.get() + 1
-        while not count_front_L.empty():
-            count_front_L.get()
         count_front_L.put(tempvar)
+    else:                                       # else, put 1 into the queue
+        count_front_L.put(1)
 
 
 def counter_front_r(pin):  # function for the front right wheel count
-    if not count_front_R.empty():
+    if not count_front_R.empty():               # if the queue isn't empty, increase the count by 1
         tempvar = count_front_R.get() + 1
-        while not count_front_R.empty():
-            count_front_R.get()
         count_front_R.put(tempvar)
+    else:                                       # else, put 1 into the queue
+        count_front_R.put(1)
 
 
 def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for the rpm calculations
@@ -138,17 +140,13 @@ def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for t
         rpm_front_l = ((float(local_count_front_l) / slots_front) / sample_time) * 60   # calculate the rpm
         rpm_front_r = ((float(local_count_front_r) / slots_front) / sample_time) * 60   # calculate the rpm
         vel_ms = d_wheel * math.pi * (float((rpm_front_l + rpm_front_r) / 2) / 60)  # calculate the velocity as an average of the two front wheels
-        while not count_rear_L.empty():
-            count_rear_L.get()
+        empty_queue(count_rear_L)   # empty the queue
         count_rear_L.put(0)     # Reset to 0 after calculation
-        while not count_rear_R.empty():
-            count_rear_R.get()
+        empty_queue(count_rear_R)   # empty the queue
         count_rear_R.put(0)     # Reset to 0 after calculation
-        while not count_front_L.empty():
-            count_front_L.get()
+        empty_queue(count_front_L)  # empty the queue
         count_front_L.put(0)    # Reset to 0 after calculation
-        while not count_front_R.empty():
-            count_front_R.get()
+        empty_queue(count_front_R)  # empty the queue
         count_front_R.put(0)    # Reset to 0 after calculation
         rpm_queue.put(str(rpm_rear_l)+","+str(rpm_rear_r)+","+str(rpm_front_l)+","+str(rpm_front_r)+","+str(vel_ms))    # put the data into the queue
 
