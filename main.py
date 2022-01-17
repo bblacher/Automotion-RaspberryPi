@@ -43,6 +43,7 @@ def usb_automount():
 def sensor_fusion():
     currtime = time.time()      # get the current time for the first sensorfusion
     mpuerror = False            # init mpuerror as false
+    calc_count = 0
     while not mpuerror:
         try:
             imu.readSensor()
@@ -53,11 +54,54 @@ def sensor_fusion():
                 sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
                                                 imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
                                                 imu.MagVals[2], dt)  # call the sensorfusion algorithm
+            if calc_count == 50:
+                roll = sensorfusion.roll  # get roll
+                pitch = sensorfusion.pitch  # get pitch
+                yaw = sensorfusion.yaw  # get yaw
+                temp = imu.Temp  # get temp
+
+                a = math.radians(roll - 90)  # flip the roll data by -90 degrees and save it into a
+                b = math.radians(pitch + 90)  # flip the pitch data by 90 degrees and save it into a
+
+                flipa = math.radians(roll - 180)  # flip the roll data by -180 degrees and save it into flipa
+
+                if a < math.pi * -1:  # if a is now less than -pi
+                    a = a + 2 * math.pi  # flip it by 2pi
+
+                if b > math.pi:  # if a is now more than pi
+                    b = b - 2 * math.pi  # flip it by -2pi
+
+                if flipa < math.pi * -1:  # if flip a is now less than -pi
+                    flipa = flipa + 2 * math.pi  # flip it by 2pi
+
+                xoffs = math.sqrt(((g * math.tan(math.radians(90))) / math.sqrt(
+                    (math.tan(math.radians(90)) ** 2) / (math.cos(b) ** 2) + 1)) ** 2)  # Offset in x
+                yoffs = g / math.sqrt((math.tan(0) ** 2) + (math.tan(a) ** 2) + 1)  # Offset in y
+                zoffs = g / math.sqrt(((1 / math.tan(a)) ** 2) + ((1 / math.tan(b)) ** 2) + 1)  # Offset in z
+
+                if pitch < 0:  # check if x-Offset should be subtracted
+                    ax = imu.AccelVals[0] - xoffs  # subtract x-Offset
+                else:  # check if x-Offset should be added
+                    ax = imu.AccelVals[0] + xoffs  # add x-Offset
+
+                if flipa < 0:  # check if y-Offset should be subtracted
+                    ay = imu.AccelVals[1] - yoffs  # subtract y-Offset
+                else:  # check if y-Offset should be added
+                    ay = imu.AccelVals[1] + yoffs  # add y-Offset
+
+                if a * b < 0:  # check if z-Offset should be subtracted
+                    az = imu.AccelVals[2] - zoffs  # subtract z-Offset
+                else:  # check if z-Offset should be added
+                    az = imu.AccelVals[2] + zoffs  # add z-Offset
+                empty_queue(mpu_queue)  # empty the queue
+                mpu_queue.put(str(roll)+","+str(pitch)+","+str(yaw)+","+str(ax)+","+str(ay)+","+str(az)+","+str(temp))
+                calc_count = 0
+            calc_count +=1
             time.sleep(0.01)
+
         except:
-            mpuerror = True         # set imuerror true
-            empty_queue(imuerror)   # empty the queue
-            imuerror.put(True)      # set imuerror true
+            empty_queue(mpu_queue)  # empty the queue
+            mpu_queue.put("error,error,error,error,error,error,error")
 
 
 def get_gps():
@@ -147,27 +191,15 @@ def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for t
         rpm_queue.put(str(rpm_rear_l)+","+str(rpm_rear_r)+","+str(rpm_front_l)+","+str(rpm_front_r)+","+str(vel_ms))    # put the data into the queue
 
 
-def print_data(u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps, u_rpm):        # print the data (meant for debugging purposes)
-    print("roll: " + str(u_roll))  # print roll
-    print("pitch: " + str(u_pitch))  # print pitch
-    print("yaw: " + str(u_yaw))  # print yaw
-    print("Ax " + str(u_ax))  # print ax
-    print("Ay " + str(u_ay))  # print ay
-    print("Az " + str(u_az))  # print az
-    print("Temp: " + str(u_temp))  # print temp
+def print_data(u_mpu, u_gps, u_rpm):        # print the data (meant for debugging purposes)
+    print("MPU: " + str(u_mpu))  # print roll
     print("GPS: " + str(u_gps))  # print gps
     print("RPM: " + str(u_rpm))  # print rpm
 
 
-def write_data(u_now, u_roll, u_pitch, u_yaw, u_ax, u_ay, u_az, u_temp, u_gps, u_rpm):  # write the data to the internal sd card
+def write_data(u_now, u_mpu, u_gps, u_rpm):  # write the data to the internal sd card
     file.write(str(u_now) + ",")  # write Time
-    file.write(str(u_roll) + ",")  # write roll
-    file.write(str(u_pitch) + ",")  # write pitch
-    file.write(str(u_yaw) + ",")  # write yaw
-    file.write(str(u_ax) + ",")  # write ax
-    file.write(str(u_ay) + ",")  # write ay
-    file.write(str(u_az) + ",")  # write az
-    file.write(str(u_temp) + ",")  # write temp
+    file.write(str(u_mpu) + ",")  # write roll
     file.write(str(u_gps))  # write gps
     file.write(str(u_rpm))  # write rpm
     file.write("\n")  # write newline
@@ -184,7 +216,7 @@ if not os.path.exists('data'):  # If the data path doesn't exit, create it
     os.makedirs('data')
 
 g = 10                                              # set g as 10
-imuerror = SimpleQueue()                                  # init imuerror
+mpu_queue = SimpleQueue()                                  # init imuerror
 try:                                                # Error handling for the IMU
     sensorfusion = madgwick.Madgwick(0.5)           # set Madgwick as the sensorfusion-algorythm
     address = 0x68                                  # MPU9250 I2C-Address
@@ -192,13 +224,13 @@ try:                                                # Error handling for the IMU
     imu = MPU9250.MPU9250(bus, address)             # set MPU9250 as the selected IMU
     imu.begin()                                     # begin IMU readings
     imu.loadCalibDataFromFile("./config/Calib.json")  # load calibration data
-    imuerror.put(False)                             # Set imuerror false for later use
     process_sensorfusion = Process(target=sensor_fusion)  # create process for the sensorfusion
     process_sensorfusion.start()                    # start the process for the sensorfusion
 
 except:                                             # Except-Statement for imuerror
+    mpu_queue.put("error,error,error,error,error,error,error")
     print("MPU 9250: Error! (Not connected?)")      # Write error message
-    imuerror.put(True)                              # Set imuerror true for later use
+
 
 port = "/dev/ttyAMA0"                               # define UART device
 ser = serial.Serial(port, baudrate=9600, timeout=0.5)  # set serial communication options
@@ -249,61 +281,13 @@ while 1:                            # main loop
         file = open("./data/" + now + ".txt", 'w')  # create and open a new datafile
         file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng,rpm_rear_l,rpm_rear_r,rpm_front_l,rpm_front_r,vel_ms\n")  # write the data legend into a new line
         while collecting_data:
-            if not imuerror.empty():
-                main_imuerror = imuerror.get()
-            if not main_imuerror:
-                roll = sensorfusion.roll                # get roll
-                pitch = sensorfusion.pitch              # get pitch
-                yaw = sensorfusion.yaw                  # get yaw
-                temp = imu.Temp                         # get temp
-
-                a = math.radians(roll - 90)             # flip the roll data by -90 degrees and save it into a
-                b = math.radians(pitch + 90)            # flip the pitch data by 90 degrees and save it into a
-
-                flipa = math.radians(roll - 180)        # flip the roll data by -180 degrees and save it into flipa
-
-                if a < math.pi * -1:                    # if a is now less than -pi
-                    a = a + 2 * math.pi                 # flip it by 2pi
-
-                if b > math.pi:                         # if a is now more than pi
-                    b = b - 2 * math.pi                 # flip it by -2pi
-
-                if flipa < math.pi * -1:                # if flip a is now less than -pi
-                    flipa = flipa + 2 * math.pi         # flip it by 2pi
-
-                xoffs = math.sqrt(((g * math.tan(math.radians(90))) / math.sqrt((math.tan(math.radians(90)) ** 2) / (math.cos(b) ** 2) + 1)) ** 2)  # Offset in x
-                yoffs = g / math.sqrt((math.tan(0) ** 2) + (math.tan(a) ** 2) + 1)              # Offset in y
-                zoffs = g / math.sqrt(((1 / math.tan(a)) ** 2) + ((1 / math.tan(b)) ** 2) + 1)  # Offset in z
-
-                if pitch < 0:                       # check if x-Offset should be subtracted
-                    ax = imu.AccelVals[0] - xoffs   # subtract x-Offset
-                elif pitch > 0:                     # check if x-Offset should be added
-                    ax = imu.AccelVals[0] + xoffs   # add x-Offset
-
-                if flipa < 0:                       # check if y-Offset should be subtracted
-                    ay = imu.AccelVals[1] - yoffs   # subtract y-Offset
-                elif flipa > 0:                     # check if y-Offset should be added
-                    ay = imu.AccelVals[1] + yoffs   # add y-Offset
-
-                if a * b < 0:                       # check if z-Offset should be subtracted
-                    az = imu.AccelVals[2] - zoffs   # subtract z-Offset
-                elif a * b > 0:                     # check if z-Offset should be added
-                    az = imu.AccelVals[2] + zoffs   # add z-Offset
-
-            elif main_imuerror:
-                roll = "error"  # write error into imusensor values
-                pitch = "error"  # write error into imusensor values
-                yaw = "error"  # write error into imusensor values
-                ax = "error"  # write error into imusensor values
-                ay = "error"  # write error into imusensor values
-                az = "error"  # write error into imusensor values
-                temp = "error"  # write error into imusensor values
-
             now = datetime.now()    # get datetime
             if not gps_queue.empty():
                 gps = gps_queue.get()   # get gps data
             if not rpm_queue.empty():
                 rpm = rpm_queue.get()   # get rpm data
-            print_data(roll, pitch, yaw, ax, ay, az, temp, gps, rpm)         # print the data (meant for debugging purposes)
-            write_data(now, roll, pitch, yaw, ax, ay, az, temp, gps, rpm)    # write the data to the internal sd card
+            if not mpu_queue.empty():
+                mpu = mpu_queue.get()   # get rpm data
+            print_data(mpu, gps, rpm)         # print the data (meant for debugging purposes)
+            write_data(now, mpu, gps, rpm)    # write the data to the internal sd card
             time.sleep(1)
