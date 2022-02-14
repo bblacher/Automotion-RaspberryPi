@@ -55,13 +55,10 @@ def sensor_fusion():
                                                 imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
                                                 imu.MagVals[2], dt)  # call the sensorfusion algorithm
             if calc_count == 50:
-                roll = sensorfusion.roll + 180  # get roll
+                roll = sensorfusion.roll  # get roll
                 pitch = sensorfusion.pitch  # get pitch
                 yaw = sensorfusion.yaw  # get yaw
                 temp = imu.Temp  # get temp
-
-                if roll > 180:  # if roll is now greater than 180
-                    roll = roll - 360  # flip it by 360
 
                 a = math.radians(roll - 90)  # flip the roll data by -90 degrees and save it into a
                 b = math.radians(pitch + 90)  # flip the pitch data by 90 degrees and save it into a
@@ -96,6 +93,11 @@ def sensor_fusion():
                     az = imu.AccelVals[2] - zoffs  # subtract z-Offset
                 else:  # check if z-Offset should be added
                     az = imu.AccelVals[2] + zoffs  # add z-Offset
+
+                roll += 180
+                if roll > 180:  # if roll is now greater than 180
+                    roll = roll - 360  # flip it by 360
+
                 empty_queue(mpu_queue)  # empty the queue
                 mpu_queue.put(str(roll)+","+str(pitch)+","+str(yaw)+","+str(ax)+","+str(ay)+","+str(az)+","+str(temp))
                 calc_count = 0
@@ -297,4 +299,4 @@ while 1:                            # main loop
                 mpu = mpu_queue.get()   # get rpm data
             print_data(mpu, rpm, gps)         # print the data (meant for debugging purposes)
             write_data(now, mpu, rpm, gps)    # write the data to the internal sd card
-            time.sleep(1)
+            time.sleep(0.5)
