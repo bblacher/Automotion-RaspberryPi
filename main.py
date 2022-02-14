@@ -55,10 +55,13 @@ def sensor_fusion():
                                                 imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
                                                 imu.MagVals[2], dt)  # call the sensorfusion algorithm
             if calc_count == 50:
-                roll = sensorfusion.roll  # get roll
+                roll = sensorfusion.roll + 180  # get roll
                 pitch = sensorfusion.pitch  # get pitch
                 yaw = sensorfusion.yaw  # get yaw
                 temp = imu.Temp  # get temp
+
+                if roll > 180:  # if roll is now greater than 180
+                    roll = roll - 360  # flip it by 360
 
                 a = math.radians(roll - 90)  # flip the roll data by -90 degrees and save it into a
                 b = math.radians(pitch + 90)  # flip the pitch data by 90 degrees and save it into a
