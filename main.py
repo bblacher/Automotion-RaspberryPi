@@ -191,17 +191,17 @@ def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for t
         rpm_queue.put(str(rpm_rear_l)+","+str(rpm_rear_r)+","+str(rpm_front_l)+","+str(rpm_front_r)+","+str(vel_ms))    # put the data into the queue
 
 
-def print_data(u_mpu, u_gps, u_rpm):        # print the data (meant for debugging purposes)
+def print_data(u_mpu, u_rpm, u_gps):        # print the data (meant for debugging purposes)
     print("MPU: " + str(u_mpu))  # print roll
-    print("GPS: " + str(u_gps))  # print gps
     print("RPM: " + str(u_rpm))  # print rpm
+    print("GPS: " + str(u_gps))  # print gps
 
 
-def write_data(u_now, u_mpu, u_gps, u_rpm):  # write the data to the internal sd card
+def write_data(u_now, u_mpu, u_rpm, u_gps):  # write the data to the internal sd card
     file.write(str(u_now) + ",")  # write Time
     file.write(str(u_mpu) + ",")  # write roll
+    file.write(str(u_rpm) + ",")  # write rpm
     file.write(str(u_gps))  # write gps
-    file.write(str(u_rpm))  # write rpm
     file.write("\n")  # write newline
 
 
@@ -240,9 +240,11 @@ gps_process = Process(target=get_gps)               # create process for the gps
 gps_process.start()                                 # start the process for the gps module
 
 collecting_data = False                             # init collecting_data
+led = 37                                            # set the LED to PIN 37
 modeswitch = 40                                     # set the modeswitch Button to PIN 40
 GPIO.setmode(GPIO.BOARD)                            # Set GPIO to use Board pin layout
 GPIO.setup(modeswitch, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # turn on pullup and set as input (modeswitch button)
+GPIO.setup(led, GPIO.OUT)   # set as output (led)
 GPIO.add_event_detect(modeswitch, GPIO.FALLING, callback=start_stop, bouncetime=1000)   # Attach interrupt to modeswitch
 
 sensor_rear_L = 11      # set rear_L pin
@@ -272,14 +274,16 @@ rpm_process.start()                     # start process for the gps module
 while 1:                            # main loop
     if not collecting_data:   # if in usb-transfer mode
         usb_automount()             # call usb_automount
+        GPIO.output(led, 0)  # turn LED off
 
     elif collecting_data:      # if in data collection mode
+        GPIO.output(led, 1)  # turn LED on
         now = str(datetime.now())    # get datetime for the file name
         now = now.replace(' ', '_')  # replace blank space with underline for the file name
         now = now.replace(':', '_')  # replace colon with underline for the file name
         now = now.replace('.', '_')  # replace dot with underline for the file name
         file = open("./data/" + now + ".txt", 'w')  # create and open a new datafile
-        file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp,lat,lng,rpm_rear_l,rpm_rear_r,rpm_front_l,rpm_front_r,vel_ms\n")  # write the data legend into a new line
+        file.write("datetime,roll,pitch,yaw,ax,ay,az,Temp,rpm_rear_l,rpm_rear_r,rpm_front_l,rpm_front_r,vel_ms,lat,lng\n")  # write the data legend into a new line
         while collecting_data:
             now = datetime.now()    # get datetime
             if not gps_queue.empty():
@@ -288,6 +292,6 @@ while 1:                            # main loop
                 rpm = rpm_queue.get()   # get rpm data
             if not mpu_queue.empty():
                 mpu = mpu_queue.get()   # get rpm data
-            print_data(mpu, gps, rpm)         # print the data (meant for debugging purposes)
-            write_data(now, mpu, gps, rpm)    # write the data to the internal sd card
+            print_data(mpu, rpm, gps)         # print the data (meant for debugging purposes)
+            write_data(now, mpu, rpm, gps)    # write the data to the internal sd card
             time.sleep(1)
