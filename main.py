@@ -30,6 +30,9 @@ def usb_automount():
                 for filename in os.listdir("./data/"):          # loop through all datafiles
                     shutil.copy("./data/"+filename, "/media/usb0")  # Copy the current file to the drive
                     print("copied!")                            # Confirmation that a file was copied successfully
+                    GPIO.output(led, 1)  # turn LED on
+                    time.sleep(0.1)
+                    GPIO.output(led, 0)  # turn LED off
             except:                                             # Error-Case: tell the user that the file wasn't copied
                 print("copy error! (is there a datafile?)")     # Write the error
             while ismounted:                                    # while the device is mounted, tell the user to unplug it
