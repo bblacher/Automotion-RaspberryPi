@@ -54,7 +54,7 @@ def sensor_fusion():
                 sensorfusion.updateRollPitchYaw(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2], imu.GyroVals[0],
                                                 imu.GyroVals[1], imu.GyroVals[2], imu.MagVals[0], imu.MagVals[1],
                                                 imu.MagVals[2], dt)  # call the sensorfusion algorithm
-            if calc_count == 50:
+            if calc_count == 25:
                 roll = sensorfusion.roll  # get roll
                 pitch = sensorfusion.pitch  # get pitch
                 yaw = sensorfusion.yaw  # get yaw
