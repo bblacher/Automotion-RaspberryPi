@@ -278,8 +278,8 @@ rpm_process.start()                     # start process for the gps module
 
 while 1:                            # main loop
     if not collecting_data:   # if in usb-transfer mode
-        usb_automount()             # call usb_automount
         GPIO.output(led, 0)  # turn LED off
+        usb_automount()             # call usb_automount
 
     elif collecting_data:      # if in data collection mode
         GPIO.output(led, 1)  # turn LED on
