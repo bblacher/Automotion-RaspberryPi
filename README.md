@@ -1,4 +1,4 @@
-# RC-Car
+# Automotion
 DA Modellauto mit Sensorik
 
 ## Raspberry Pi Setup:
