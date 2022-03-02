@@ -138,6 +138,7 @@ def counter_rear_l(pin):                            # function for the rear left
     currtime_rl = newtime_rl                        # write newtime to current time
     flag_rl = True                                  # set flag true
 
+
 def counter_rear_r(pin):                        # function for the rear right wheel count
     global dt_rr, newtime_rr, currtime_rr, flag_rr  # make variables global
     newtime_rr = time.time()  # get newtime
@@ -163,8 +164,8 @@ def counter_front_r(pin):  # function for the front right wheel count
 
 
 def get_rpm(d_wheel, slots_rear, slots_front):     # function for the rpm calculations
-    global dt_rl, dt_rr, dt_fl, dt_fr, flag_rl, flag_rr, flag_fl, flag_fr, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_l, vel_ms # make variables global
-    if flag_fl == True:
+    global dt_rl, dt_rr, dt_fl, dt_fr, flag_rl, flag_rr, flag_fl, flag_fr, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms # make variables global
+    if flag_rl == True:
         rpm_rear_l = ((1/dt_rl) * 60)/slots_rear  # calculate the rpm
     else:
         rpm_rear_l = 0
@@ -292,6 +293,7 @@ while 1:                            # main loop
                 gps = gps_queue.get()   # get gps data
             if not mpu_queue.empty():
                 mpu = mpu_queue.get()   # get rpm data
+            get_rpm(0.14, 20, 4)
             print_data(mpu, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, gps)         # print the data (meant for debugging purposes)
             write_data(now, mpu, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, gps)    # write the data to the internal sd card
             time.sleep(0.5)
