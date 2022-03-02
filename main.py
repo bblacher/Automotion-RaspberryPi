@@ -131,84 +131,76 @@ def get_gps():
             gpserror = True
 
 
-def counter_rear_l(pin):                        # function for the rear left wheel count
-    if not count_rear_L.empty():                # if the queue isn't empty, increase the count by 1
-        tempvar = count_rear_L.get() + 1
-        count_rear_L.put(tempvar)
-    else:                                       # else, put 1 into the queue
-        count_rear_L.put(1)
-
+def counter_rear_l(pin):                            # function for the rear left wheel time measurement
+    global dt_rl, newtime_rl, currtime_rl, flag_rl  # make variables global
+    newtime_rl = time.time()                        # get newtime
+    dt_rl = newtime_rl - currtime_rl                # delta time
+    currtime_rl = newtime_rl                        # write newtime to current time
+    flag_rl = True                                  # set flag true
 
 def counter_rear_r(pin):                        # function for the rear right wheel count
-    if not count_rear_R.empty():                # if the queue isn't empty, increase the count by 1
-        tempvar = count_rear_R.get() + 1
-        count_rear_R.put(tempvar)
-    else:                                       # else, put 1 into the queue
-        count_rear_R.put(1)
+    global dt_rr, newtime_rr, currtime_rr, flag_rr  # make variables global
+    newtime_rr = time.time()  # get newtime
+    dt_rr = newtime_rr - currtime_rr  # delta time
+    currtime_rr = newtime_rr  # write newtime to current time
+    flag_rr = True  # set flag true
 
 
 def counter_front_l(pin):  # function for the front left wheel count
-    if not count_front_L.empty():               # if the queue isn't empty, increase the count by 1
-        tempvar = count_front_L.get() + 1
-        count_front_L.put(tempvar)
-    else:                                       # else, put 1 into the queue
-        count_front_L.put(1)
+    global dt_fl, newtime_fl, currtime_fl, flag_fl  # make variables global
+    newtime_fl = time.time()  # get newtime
+    dt_fl = newtime_fl - currtime_fl  # delta time
+    currtime_fl = newtime_fl  # write newtime to current time
+    flag_fl = True  # set flag true
 
 
 def counter_front_r(pin):  # function for the front right wheel count
-    if not count_front_R.empty():               # if the queue isn't empty, increase the count by 1
-        tempvar = count_front_R.get() + 1
-        count_front_R.put(tempvar)
-    else:                                       # else, put 1 into the queue
-        count_front_R.put(1)
+    global dt_fr, newtime_fr, currtime_fr, flag_fr  # make variables global
+    newtime_fr = time.time()  # get newtime
+    dt_fr = newtime_fr - currtime_fr  # delta time
+    currtime_fr = newtime_fr  # write newtime to current time
+    flag_fr = True  # set flag true
 
 
-def get_rpm(d_wheel, sample_time, slots_rear, slots_front):     # function for the rpm calculations
-    while 1:
-        time.sleep(sample_time)  # sleep for the sample time
+def get_rpm(d_wheel, slots_rear, slots_front):     # function for the rpm calculations
+    global dt_rl, dt_rr, dt_fl, dt_fr, flag_rl, flag_rr, flag_fl, flag_fr, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_l, vel_ms # make variables global
+    if flag_fl == True:
+        rpm_rear_l = ((1/dt_rl) * 60)/slots_rear  # calculate the rpm
+    else:
+        rpm_rear_l = 0
 
-        if not count_rear_L.empty():
-            local_count_rear_l = count_rear_L.get()
-        else:
-            local_count_rear_l = 0
+    if flag_rr == True:
+        rpm_rear_r = ((1/dt_rr) * 60)/slots_rear  # calculate the rpm
+    else:
+        rpm_rear_r = 0
 
-        if not count_rear_R.empty():
-            local_count_rear_r = count_rear_R.get()
-        else:
-            local_count_rear_r = 0
+    if flag_fl == True:
+        rpm_front_l = ((1/dt_fl) * 60)/slots_front  # calculate the rpm
+    else:
+        rpm_front_l = 0
 
-        if not count_front_L.empty():
-            local_count_front_l = count_front_L.get()
-        else:
-            local_count_front_l = 0
+    if flag_fr == True:
+        rpm_front_r = ((1/dt_fr) * 60)/slots_front  # calculate the rpm
+    else:
+        rpm_front_r = 0
 
-        if not count_front_R.empty():
-            local_count_front_r = count_front_R.get()
-        else:
-            local_count_front_r = 0
-
-        rpm_rear_l = ((float(local_count_rear_l) / slots_rear) / sample_time) * 60  # calculate the rpm
-        rpm_rear_r = ((float(local_count_rear_r) / slots_rear) / sample_time) * 60  # calculate the rpm
-        rpm_front_l = ((float(local_count_front_l) / slots_front) / sample_time) * 60   # calculate the rpm
-        rpm_front_r = ((float(local_count_front_r) / slots_front) / sample_time) * 60   # calculate the rpm
-        vel_ms = d_wheel * math.pi * (float(rpm_rear_l) / 60)  # calculate the velocity as an average of the two front wheels # TODO change to both wheels
-        empty_queue(count_rear_L)   # empty the queue
-        empty_queue(count_rear_R)   # empty the queue
-        empty_queue(count_front_L)  # empty the queue
-        empty_queue(count_front_R)  # empty the queue
-        rpm_queue.put(str(rpm_rear_l)+","+str(rpm_rear_r)+","+str(rpm_front_l)+","+str(rpm_front_r)+","+str(vel_ms))    # put the data into the queue
+    vel_ms = d_wheel * math.pi * (float((rpm_front_l + rpm_front_r) / 2) / 60) # calculate the velocity as an average of the two front wheels
+    flag_rl = False
+    flag_rr = False
+    flag_fl = False
+    flag_fr = False
 
 
-def print_data(u_mpu, u_rpm, u_gps):        # print the data (meant for debugging purposes)
+def print_data(u_mpu, u_rpm_rear_l, u_rpm_rear_r, u_rpm_front_l, u_rpm_front_r, u_vel_ms, u_gps):        # print the data (meant for debugging purposes)
     print("MPU: " + str(u_mpu))  # print roll
-    print("RPM: " + str(u_rpm))  # print rpm
+    print("RPM: " + str(u_rpm_rear_l) + "," + str(u_rpm_rear_r) + "," + str(u_rpm_front_l) + "," + str(u_rpm_front_r) + "," + str(u_vel_ms))  # print rpm
     print("GPS: " + str(u_gps))  # print gps
 
 
-def write_data(u_now, u_mpu, u_rpm, u_gps):  # write the data to the internal sd card
+def write_data(u_now, u_mpu, u_rpm_rear_l, u_rpm_rear_r, u_rpm_front_l, u_rpm_front_r, u_vel_ms, u_gps):  # write the data to the internal sd card
     file.write(str(u_now) + ",")  # write Time
     file.write(str(u_mpu) + ",")  # write roll
-    file.write(str(u_rpm) + ",")  # write rpm
+    file.write(str(u_rpm_rear_l) + "," + str(u_rpm_rear_r) + "," + str(u_rpm_front_l) + "," + str(u_rpm_front_r) + "," + str(u_vel_ms) + ",")  # write rpm
     file.write(str(u_gps))  # write gps
     file.write("\n")  # write newline
 
@@ -259,14 +251,6 @@ sensor_rear_L = 11      # set rear_L pin
 sensor_rear_R = 12      # set rear_R pin
 sensor_front_L = 13     # set front_L pin
 sensor_front_R = 15     # set front_R pin
-count_rear_L = SimpleQueue()         # create SimpleQueue
-count_rear_R = SimpleQueue()         # create SimpleQueue
-count_front_L = SimpleQueue()        # create SimpleQueue
-count_front_R = SimpleQueue()        # create SimpleQueue
-count_rear_L.put(0)                  # init as 0
-count_rear_R.put(0)                  # init as 0
-count_front_L.put(0)                 # init as 0
-count_front_R.put(0)                 # init as 0
 GPIO.setup(sensor_rear_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (rear_L)
 GPIO.setup(sensor_rear_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (rear_R)
 GPIO.setup(sensor_front_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # turn on pulldown and set as input (front_L)
@@ -275,9 +259,19 @@ GPIO.add_event_detect(sensor_rear_L, GPIO.RISING, callback=counter_rear_l)  # At
 GPIO.add_event_detect(sensor_rear_R, GPIO.RISING, callback=counter_rear_r)  # Attach interrupt to rear_R
 GPIO.add_event_detect(sensor_front_L, GPIO.RISING, callback=counter_front_l)    # Attach interrupt to front_L
 GPIO.add_event_detect(sensor_front_R, GPIO.RISING, callback=counter_front_r)    # Attach interrupt to front_R
-rpm_queue = SimpleQueue()                     # create queue for the rpm data
-rpm_process = Process(target=get_rpm, args=(0.14, 1, 4, 5))   # create process for the gps module (args = d_wheel, sample_time, slots_rear, slots_front)
-rpm_process.start()                     # start process for the gps module
+currtime_rl = time.time()
+currtime_rr = currtime_rl
+currtime_fl = currtime_rl
+currtime_fr = currtime_rl
+flag_rl = False
+flag_rr = False
+flag_fl = False
+flag_fr = False
+rpm_rear_l = 0
+rpm_rear_r = 0
+rpm_front_l = 0
+rpm_front_r = 0
+vel_ms = 0
 
 while 1:                            # main loop
     if not collecting_data:   # if in usb-transfer mode
@@ -296,10 +290,8 @@ while 1:                            # main loop
             now = datetime.now()    # get datetime
             if not gps_queue.empty():
                 gps = gps_queue.get()   # get gps data
-            if not rpm_queue.empty():
-                rpm = rpm_queue.get()   # get rpm data
             if not mpu_queue.empty():
                 mpu = mpu_queue.get()   # get rpm data
-            print_data(mpu, rpm, gps)         # print the data (meant for debugging purposes)
-            write_data(now, mpu, rpm, gps)    # write the data to the internal sd card
+            print_data(mpu, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, gps)         # print the data (meant for debugging purposes)
+            write_data(now, mpu, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, gps)    # write the data to the internal sd card
             time.sleep(0.5)
