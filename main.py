@@ -166,22 +166,22 @@ def counter_front_r(pin):  # function for the front right wheel count
 def get_rpm(d_wheel, slots_rear, slots_front):     # function for the rpm calculations
     global dt_rl, dt_rr, dt_fl, dt_fr, flag_rl, flag_rr, flag_fl, flag_fr, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms # make variables global
     if flag_rl == True:
-        rpm_rear_l = ((1/dt_rl) * 60)/slots_rear  # calculate the rpm
+        rpm_rear_l = (60/dt_rl)/slots_rear  # calculate the rpm
     else:
         rpm_rear_l = 0
 
     if flag_rr == True:
-        rpm_rear_r = ((1/dt_rr) * 60)/slots_rear  # calculate the rpm
+        rpm_rear_r = (60/dt_rr)/slots_rear  # calculate the rpm
     else:
         rpm_rear_r = 0
 
     if flag_fl == True:
-        rpm_front_l = ((1/dt_fl) * 60)/slots_front  # calculate the rpm
+        rpm_front_l = (60/dt_fl)/slots_front  # calculate the rpm
     else:
         rpm_front_l = 0
 
     if flag_fr == True:
-        rpm_front_r = ((1/dt_fr) * 60)/slots_front  # calculate the rpm
+        rpm_front_r = (60/dt_fr)/slots_front  # calculate the rpm
     else:
         rpm_front_r = 0
 
