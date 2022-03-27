@@ -92,11 +92,8 @@ def sensor_fusion():
                 else:  # check if y-Offset should be added
                     ay = imu.AccelVals[1] + yoffs  # add y-Offset
 
-                if a * b < 0:  # check if z-Offset should be subtracted
-                    az = imu.AccelVals[2] - zoffs  # subtract z-Offset
-                else:  # check if z-Offset should be added
-                    az = imu.AccelVals[2] + zoffs  # add z-Offset
-
+                az = imu.AccelVals[2] - zoffs  # subtract z-Offset
+                
                 roll += 180
                 if roll > 180:  # if roll is now greater than 180
                     roll = roll - 360  # flip it by 360
