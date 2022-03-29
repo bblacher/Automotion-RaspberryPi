@@ -129,39 +129,57 @@ def get_gps():
 
 
 def counter_rear_l(pin):                            # function for the rear left wheel time measurement
-    global dt_rl, newtime_rl, currtime_rl, flag_rl  # make variables global
+    global dt_rl, newtime_rl, currtime_rl, flag_rl, cnt_rear_l  # make variables global
     newtime_rl = time.time()                        # get newtime
     dt_rl = newtime_rl - currtime_rl                # delta time
     currtime_rl = newtime_rl                        # write newtime to current time
     flag_rl = True                                  # set flag true
+    cnt_rear_l += 1
 
 
 def counter_rear_r(pin):                        # function for the rear right wheel count
-    global dt_rr, newtime_rr, currtime_rr, flag_rr  # make variables global
+    global dt_rr, newtime_rr, currtime_rr, flag_rr, cnt_rear_r  # make variables global
     newtime_rr = time.time()  # get newtime
     dt_rr = newtime_rr - currtime_rr  # delta time
     currtime_rr = newtime_rr  # write newtime to current time
     flag_rr = True  # set flag true
+    cnt_rear_r += 1
 
 
 def counter_front_l(pin):  # function for the front left wheel count
-    global dt_fl, newtime_fl, currtime_fl, flag_fl  # make variables global
+    global dt_fl, newtime_fl, currtime_fl, flag_fl, cnt_front_l  # make variables global
     newtime_fl = time.time()  # get newtime
     dt_fl = newtime_fl - currtime_fl  # delta time
     currtime_fl = newtime_fl  # write newtime to current time
     flag_fl = True  # set flag true
+    cnt_front_l += 1
 
 
 def counter_front_r(pin):  # function for the front right wheel count
-    global dt_fr, newtime_fr, currtime_fr, flag_fr  # make variables global
+    global dt_fr, newtime_fr, currtime_fr, flag_fr, cnt_front_r  # make variables global
     newtime_fr = time.time()  # get newtime
     dt_fr = newtime_fr - currtime_fr  # delta time
     currtime_fr = newtime_fr  # write newtime to current time
     flag_fr = True  # set flag true
+    cnt_front_r += 1
 
 
 def get_rpm(d_wheel, slots_rear, slots_front):     # function for the rpm calculations
-    global dt_rl, dt_rr, dt_fl, dt_fr, flag_rl, flag_rr, flag_fl, flag_fr, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms # make variables global
+    global dt_rl, dt_rr, dt_fl, dt_fr, flag_rl, flag_rr, flag_fl, flag_fr, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, newtime_rpm, currtime_rpm, dt_rpm, cnt_rear_l, cnt_rear_r, cnt_front_l, cnt_front_r # make variables global
+    newtime_rpm = time.time()  # get newtime
+    dt_rpm = newtime_rpm - currtime_rpm  # delta time
+    currtime_rpm = newtime_rpm  # write newtime to current time
+
+    alt_rpm_rear_l = ((cnt_rear_l / dt_rpm) * 60) / slots_rear
+    alt_rpm_rear_r = ((cnt_rear_r / dt_rpm) * 60) / slots_rear
+    alt_rpm_front_l = ((cnt_front_l / dt_rpm) * 60) / slots_front
+    alt_rpm_front_r = ((cnt_front_r / dt_rpm) * 60) / slots_front
+
+    cnt_front_l = 0
+    cnt_front_r = 0
+    cnt_rear_l = 0
+    cnt_rear_r = 0
+
     if flag_rl == True:
         rpm_rear_l = (60/dt_rl)/slots_rear  # calculate the rpm
     else:
@@ -181,6 +199,18 @@ def get_rpm(d_wheel, slots_rear, slots_front):     # function for the rpm calcul
         rpm_front_r = (60/dt_fr)/slots_front  # calculate the rpm
     else:
         rpm_front_r = 0
+
+    if rpm_rear_l > alt_rpm_rear_l * 1.5:
+        rpm_rear_l = -10000
+
+    if rpm_rear_r > alt_rpm_rear_r * 1.5:
+        rpm_rear_r = -10000
+
+    if rpm_front_l > alt_rpm_front_l * 1.5:
+        rpm_front_l = -10000
+
+    if rpm_front_r > alt_rpm_front_r * 1.5:
+        rpm_front_r = -10000
 
     vel_ms = d_wheel * math.pi * (float((rpm_front_l + rpm_front_r) / 2) / 60) # calculate the velocity as an average of the two front wheels
     flag_rl = False
@@ -261,6 +291,7 @@ currtime_rl = time.time()
 currtime_rr = currtime_rl
 currtime_fl = currtime_rl
 currtime_fr = currtime_rl
+currtime_rpm = currtime_rl
 flag_rl = False
 flag_rr = False
 flag_fl = False
@@ -269,6 +300,10 @@ rpm_rear_l = 0
 rpm_rear_r = 0
 rpm_front_l = 0
 rpm_front_r = 0
+cnt_rear_l = 0
+cnt_rear_r = 0
+cnt_front_l = 0
+cnt_front_r = 0
 vel_ms = 0
 
 while 1:                            # main loop
@@ -290,7 +325,7 @@ while 1:                            # main loop
                 gps = gps_queue.get()   # get gps data
             if not mpu_queue.empty():
                 mpu = mpu_queue.get()   # get rpm data
-            get_rpm(0.14, 4, 4)
+            get_rpm(0.153, 4, 4)
             print_data(mpu, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, gps)         # print the data (meant for debugging purposes)
             write_data(now, mpu, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, gps)    # write the data to the internal sd card
             time.sleep(0.5)
