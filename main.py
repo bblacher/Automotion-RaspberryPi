@@ -201,16 +201,16 @@ def get_rpm(d_wheel, slots_rear, slots_front):     # function for the rpm calcul
         rpm_front_r = 0
 
     if rpm_rear_l > alt_rpm_rear_l * 1.5:
-        rpm_rear_l = -10000
+        rpm_rear_l = alt_rpm_rear_l
 
     if rpm_rear_r > alt_rpm_rear_r * 1.5:
-        rpm_rear_r = -10000
+        rpm_rear_r = alt_rpm_rear_r
 
     if rpm_front_l > alt_rpm_front_l * 1.5:
-        rpm_front_l = -10000
+        rpm_front_l = alt_rpm_front_l
 
     if rpm_front_r > alt_rpm_front_r * 1.5:
-        rpm_front_r = -10000
+        rpm_front_r = alt_rpm_front_r
 
     vel_ms = d_wheel * math.pi * (float((rpm_front_l + rpm_front_r) / 2) / 60) # calculate the velocity as an average of the two front wheels
     flag_rl = False
