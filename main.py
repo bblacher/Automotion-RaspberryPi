@@ -328,4 +328,4 @@ while 1:                            # main loop
             get_rpm(0.153, 4, 4)
             print_data(mpu, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, gps)         # print the data (meant for debugging purposes)
             write_data(now, mpu, rpm_rear_l, rpm_rear_r, rpm_front_l, rpm_front_r, vel_ms, gps)    # write the data to the internal sd card
-            time.sleep(0.5)
+            time.sleep(0.25)
